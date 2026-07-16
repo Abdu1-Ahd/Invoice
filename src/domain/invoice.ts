@@ -1,0 +1,63 @@
+import { z } from 'zod';
+
+export const InvoiceStatusSchema = z.enum(['Draft', 'Sent', 'Paid', 'Overdue']);
+export type InvoiceStatus = z.infer<typeof InvoiceStatusSchema>;
+
+export const InvoiceItemSchema = z.object({
+  id: z.string().uuid(),
+  invoiceId: z.string().uuid(),
+  description: z.string().min(1, 'Description is required'),
+  quantity: z.number().positive(),
+  unitPrice: z.number().min(0),
+  total: z.number().min(0),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  deletedAt: z.number().nullable(),
+});
+export type InvoiceItem = z.infer<typeof InvoiceItemSchema>;
+
+export const InvoiceSchema = z.object({
+  id: z.string().uuid(),
+  customerId: z.string().uuid(),
+  invoiceNumber: z.string().min(1, 'Invoice number is required'),
+  status: InvoiceStatusSchema,
+  issueDate: z.number(),
+  dueDate: z.number(),
+  subtotal: z.number().min(0),
+  taxRate: z.number().min(0).max(100),
+  taxAmount: z.number().min(0),
+  totalAmount: z.number().min(0),
+  notes: z.string().optional().or(z.literal('')),
+  terms: z.string().optional().or(z.literal('')),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  deletedAt: z.number().nullable(),
+});
+export type Invoice = z.infer<typeof InvoiceSchema>;
+
+export const InvoiceItemPayloadSchema = InvoiceItemSchema.omit({
+  id: true,
+  invoiceId: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+  total: true, // Calculated automatically
+});
+export type InvoiceItemPayload = z.infer<typeof InvoiceItemPayloadSchema>;
+
+export const InvoicePayloadSchema = InvoiceSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+  subtotal: true, // Calculated
+  taxAmount: true, // Calculated
+  totalAmount: true, // Calculated
+});
+export type InvoicePayload = z.infer<typeof InvoicePayloadSchema>;
+
+export const FullInvoicePayloadSchema = z.object({
+  invoice: InvoicePayloadSchema,
+  items: z.array(InvoiceItemPayloadSchema).min(1, 'At least one item is required'),
+});
+export type FullInvoicePayload = z.infer<typeof FullInvoicePayloadSchema>;
