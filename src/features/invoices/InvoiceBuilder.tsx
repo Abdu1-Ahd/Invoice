@@ -3,7 +3,9 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FullInvoicePayloadSchema, FullInvoicePayload } from '@/domain/invoice';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { calculateInvoiceTotals } from './utils/calculations';
+import { formatCurrency } from '@/core/utils/currency';
 import { Input } from '@/shared/components/Input';
 import { Label } from '@/shared/components/Label';
 import { Button } from '@/shared/components/Button';
@@ -20,11 +22,13 @@ interface InvoiceBuilderProps {
 
 export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCancel, isLoading }) => {
   const { customers, loadCustomers } = useCustomerStore();
+  const { settings, loadSettings } = useSettingsStore();
   const [customerOptions, setCustomerOptions] = useState<{label: string, value: string}[]>([]);
 
   useEffect(() => {
     loadCustomers();
-  }, [loadCustomers]);
+    loadSettings();
+  }, [loadCustomers, loadSettings]);
 
   useEffect(() => {
     setCustomerOptions(customers.map(c => ({ label: c.name, value: c.id })));
@@ -49,6 +53,9 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
         taxRate: 0,
         notes: '',
         terms: 'Net 30',
+        billingCycle: 'One-Time',
+        currency: '', // Will fall back to settings
+        discount: { type: 'percentage', value: 0 },
       },
       items: [
         { description: '', quantity: 1, unitPrice: 0 }
@@ -63,8 +70,14 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
 
   const watchItems = watch('items');
   const watchTaxRate = watch('invoice.taxRate');
+  const watchDiscount = watch('invoice.discount');
+  const watchCurrency = watch('invoice.currency') || settings?.currency || 'PKR';
 
-  const { subtotal, taxAmount, totalAmount } = calculateInvoiceTotals(watchItems || [], watchTaxRate || 0);
+  const { subtotal, discountAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
+    watchItems || [], 
+    watchTaxRate || 0,
+    watchDiscount
+  );
 
   const submitting = isLoading || isSubmitting;
 
@@ -82,7 +95,7 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Header Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface border border-border-subtle rounded-xl shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface border border-border rounded-xl shadow-sm">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Customer *</Label>
@@ -110,21 +123,46 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
               error={errors.invoice?.status?.message}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Tax Rate (%)</Label>
-            <Input type="number" step="0.1" {...register('invoice.taxRate', { valueAsNumber: true })} error={errors.invoice?.taxRate?.message} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Billing Cycle</Label>
+              <Select 
+                {...register('invoice.billingCycle')} 
+                options={[
+                  { label: 'One-Time', value: 'One-Time' },
+                  { label: 'Weekly', value: 'Weekly' },
+                  { label: 'Bi-Weekly', value: 'Bi-Weekly' },
+                  { label: 'Monthly', value: 'Monthly' },
+                  { label: 'Quarterly', value: 'Quarterly' },
+                  { label: 'Semi-Annual', value: 'Semi-Annual' },
+                  { label: 'Annual', value: 'Annual' },
+                  { label: 'Custom', value: 'Custom' },
+                ]}
+                error={errors.invoice?.billingCycle?.message}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Input placeholder={settings?.currency || 'PKR'} {...register('invoice.currency')} error={errors.invoice?.currency?.message} />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Line Items */}
-      <div className="p-6 bg-surface border border-border-subtle rounded-xl shadow-sm space-y-4">
+      <div className="p-6 bg-surface border border-border rounded-xl shadow-sm space-y-4">
         <Typography variant="h3">Line Items</Typography>
         {fields.map((field, index) => (
-          <div key={field.id} className="flex gap-4 items-start pb-4 border-b border-border-subtle">
+          <div key={field.id} className="flex gap-4 items-start pb-4 border-b border-border">
             <div className="flex-1 space-y-2">
               <Label>Description</Label>
               <Input placeholder="Service description" {...register(`items.${index}.description`)} error={errors.items?.[index]?.description?.message} />
+              <textarea 
+                className="w-full text-sm mt-2 p-2 border border-input rounded-md bg-background text-text-primary focus:ring-2 focus:ring-ring focus:outline-none" 
+                placeholder="Sub-description (optional)" 
+                rows={2}
+                {...register(`items.${index}.subDescription`)}
+              />
             </div>
             <div className="w-24 space-y-2">
               <Label>Qty</Label>
@@ -149,7 +187,7 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
 
       {/* Totals & Notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4 p-6 bg-surface border border-border-subtle rounded-xl shadow-sm">
+        <div className="space-y-4 p-6 bg-surface border border-border rounded-xl shadow-sm">
            <div className="space-y-2">
             <Label>Notes</Label>
             <Input placeholder="Thank you for your business..." {...register('invoice.notes')} />
@@ -160,23 +198,47 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
           </div>
         </div>
 
-        <div className="p-6 bg-muted rounded-xl border border-border-subtle flex flex-col justify-end space-y-2 text-right">
-          <div className="flex justify-between text-muted-foreground">
+        <div className="p-6 bg-muted rounded-xl border border-border flex flex-col justify-end space-y-3 text-right">
+          <div className="grid grid-cols-2 gap-4 pb-4 border-b border-border">
+            <div className="space-y-2 text-left">
+               <Label>Discount Type</Label>
+               <Select 
+                 {...register('invoice.discount.type')} 
+                 options={[{ label: 'Percentage (%)', value: 'percentage' }, { label: 'Fixed Amount', value: 'fixed' }]}
+               />
+            </div>
+            <div className="space-y-2 text-left">
+               <Label>Discount Value</Label>
+               <Input type="number" step="any" {...register('invoice.discount.value', { valueAsNumber: true })} />
+            </div>
+          </div>
+          <div className="space-y-2 text-left">
+             <Label>Tax Rate (%)</Label>
+             <Input type="number" step="0.1" {...register('invoice.taxRate', { valueAsNumber: true })} error={errors.invoice?.taxRate?.message} />
+          </div>
+
+          <div className="flex justify-between text-text-muted mt-4">
             <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>{formatCurrency(subtotal, watchCurrency)}</span>
           </div>
-          <div className="flex justify-between text-muted-foreground">
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-danger">
+              <span>Discount:</span>
+              <span>-{formatCurrency(discountAmount, watchCurrency)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-text-muted">
             <span>Tax ({watchTaxRate || 0}%):</span>
-            <span>${taxAmount.toFixed(2)}</span>
+            <span>{formatCurrency(taxAmount, watchCurrency)}</span>
           </div>
-          <div className="flex justify-between text-xl font-bold text-foreground pt-4 border-t border-border-subtle">
+          <div className="flex justify-between text-2xl font-bold text-text-primary pt-4 border-t border-border">
             <span>Total:</span>
-            <span>${totalAmount.toFixed(2)}</span>
+            <span>{formatCurrency(totalAmount, watchCurrency)}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+      <div className="flex justify-end gap-3 pt-4 border-t border-border">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
           Cancel
         </Button>

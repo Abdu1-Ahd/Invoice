@@ -80,8 +80,8 @@ Visuals communicate trust and professionalism.
 *   **Aesthetics:** Minimal, soft, modern.
 *   **Spacing & Structure:** Generous whitespace. Information should never feel cramped.
 *   **Shapes:** Rounded corners for a friendly, modern feel (e.g., `rounded-xl` for cards, `rounded-lg` for buttons).
-*   **Typography:** Highly readable sans-serif (e.g., Inter or standard system fonts). Strong hierarchy (`h1` vs `body`).
-*   **Color Palette:** Semantic colors (Background, Surface, Primary, Muted, Danger, Success). High contrast for accessibility. Subtle shadows for elevation depth.
+*   **Typography:** Highly readable professional sans-serif (Inter/Outfit). Strong hierarchy (`h1` vs `body`).
+*   **Color Palette (Semantic Tokens):** Hardcoding colors is prohibited. We use semantic tokens (`Primary`, `Surface`, `Background`, `Card`, `Border`, `Danger`, `Success`). High contrast for accessibility. Subtle shadows for elevation depth.
 
 ---
 
@@ -145,8 +145,8 @@ Designed for unreliable internet and multi-device usage.
 All models use UUID v4.
 
 *   **Customer:** `id`, `name`, `email`, `phone`, `address`, `notes`, `createdAt`, `updatedAt`, `deletedAt`
-*   **Invoice:** `id`, `customerId`, `invoiceNumber`, `status` (Draft, Sent, Paid, Overdue), `issueDate`, `dueDate`, `subtotal`, `taxAmount`, `totalAmount`, `notes`, `terms`, `createdAt`, `updatedAt`, `deletedAt`
-*   **InvoiceItem:** `id`, `invoiceId`, `description`, `quantity`, `unitPrice`, `total`, `createdAt`, `updatedAt`, `deletedAt`
+*   **Invoice:** `id`, `customerId`, `invoiceNumber`, `status` (Draft, Sent, Paid, Overdue), `issueDate`, `dueDate`, `billingCycle` (One-Time, Monthly, etc.), `currency`, `discount` (type, value), `subtotal`, `discountAmount`, `taxableAmount`, `taxRate`, `taxAmount`, `totalAmount`, `notes`, `terms`, `createdAt`, `updatedAt`, `deletedAt`
+*   **InvoiceItem:** `id`, `invoiceId`, `description`, `subDescription`, `quantity`, `unitPrice`, `total`, `createdAt`, `updatedAt`, `deletedAt`
 *   **Payment:** `id`, `invoiceId`, `amount`, `paymentDate`, `paymentMethod`, `notes`, `createdAt`, `updatedAt`, `deletedAt`
 *   **Settings:** `id` (singleton), `userId`, `agencyName`, `logoBase64`, `defaultTaxRate`, `defaultTerms`, `currency`, `createdAt`, `updatedAt`
 *   **SyncQueue:** `id`, `entityType`, `entityId`, `operation` (CREATE/UPDATE/DELETE), `payload`, `status` (PENDING, FAILED), `createdAt`

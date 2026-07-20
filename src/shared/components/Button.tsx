@@ -12,10 +12,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
     
     const variants = {
-      primary: 'bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary',
-      secondary: 'bg-muted text-foreground hover:bg-muted/80 focus-visible:ring-muted',
-      danger: 'bg-danger text-danger-foreground hover:bg-danger/90 focus-visible:ring-danger',
-      ghost: 'hover:bg-muted hover:text-foreground text-muted-foreground',
+      primary: 'bg-primary text-primary-foreground hover:opacity-90 focus-visible:ring-primary',
+      secondary: 'bg-secondary text-text-primary hover:opacity-90 focus-visible:ring-secondary',
+      danger: 'bg-danger text-danger-foreground hover:opacity-90 focus-visible:ring-danger',
+      ghost: 'hover:bg-muted hover:text-text-primary text-text-muted',
     };
 
     const sizes = {

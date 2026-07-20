@@ -7,6 +7,7 @@ export const InvoiceItemSchema = z.object({
   id: z.string().uuid(),
   invoiceId: z.string().uuid(),
   description: z.string().min(1, 'Description is required'),
+  subDescription: z.string().optional(),
   quantity: z.number().positive(),
   unitPrice: z.number().min(0),
   total: z.number().min(0),
@@ -24,11 +25,19 @@ export const InvoiceSchema = z.object({
   issueDate: z.number(),
   dueDate: z.number(),
   subtotal: z.number().min(0),
+  discountAmount: z.number().min(0).default(0),
+  taxableAmount: z.number().min(0).optional(), // Make it optional for backward compatibility
   taxRate: z.number().min(0).max(100),
   taxAmount: z.number().min(0),
   totalAmount: z.number().min(0),
   notes: z.string().optional().or(z.literal('')),
   terms: z.string().optional().or(z.literal('')),
+  currency: z.string().optional(),
+  discount: z.object({
+    type: z.enum(['percentage', 'fixed']),
+    value: z.number().min(0),
+  }).optional(),
+  billingCycle: z.enum(['One-Time', 'Weekly', 'Bi-Weekly', 'Monthly', 'Quarterly', 'Semi-Annual', 'Annual', 'Custom']).optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   deletedAt: z.number().nullable(),
@@ -51,6 +60,8 @@ export const InvoicePayloadSchema = InvoiceSchema.omit({
   updatedAt: true,
   deletedAt: true,
   subtotal: true, // Calculated
+  discountAmount: true, // Calculated
+  taxableAmount: true, // Calculated
   taxAmount: true, // Calculated
   totalAmount: true, // Calculated
 });

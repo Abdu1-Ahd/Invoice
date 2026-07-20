@@ -36,12 +36,18 @@ export class InvoiceRepository {
     const now = Date.now();
     const invoiceId = uuidv4();
 
-    const { subtotal, taxAmount, totalAmount } = calculateInvoiceTotals(payload.items, payload.invoice.taxRate);
+    const { subtotal, discountAmount, taxableAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
+      payload.items, 
+      payload.invoice.taxRate,
+      payload.invoice.discount
+    );
 
     const newInvoice: Invoice = {
       ...payload.invoice,
       id: invoiceId,
       subtotal,
+      discountAmount,
+      taxableAmount,
       taxAmount,
       totalAmount,
       createdAt: now,

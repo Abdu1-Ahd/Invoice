@@ -26,8 +26,8 @@ Contains global application wrappers.
 ### `src/core`
 Contains pure architectural infrastructure, unaware of any specific business logic.
 - `core/storage`: Repository interfaces and the IndexedDB implementations.
-- `core/theme`: Tailwind styling configuration, base styles, and theme providers.
-- `core/utils`: Generic, domain-agnostic utilities (e.g., date wrappers, UUID generators).
+- `core/theme`: Semantic styling tokens (`tokens.ts`) and theme providers. **No hardcoded colors allowed.**
+- `core/utils`: Generic, domain-agnostic utilities (e.g., date wrappers, UUID generators, currency formatters).
 
 ### `src/domain`
 The source of truth for all data structures in the app.
@@ -73,6 +73,7 @@ Invoice templates must be highly modular. A single `TemplateRenderer` component 
 - **No Direct Storage Access:** Never use `localStorage` or `IndexedDB` APIs directly in a React component or a Zustand store. Always inject or import a Repository.
 - **No Sequential IDs:** Never generate IDs like `1, 2, 3`. Always use UUID v4.
 - **Strict Validation:** All data entering the storage layer must be validated against the `src/domain` Zod schemas.
+- **Strict Theme System:** The application uses semantic design tokens (`Primary`, `Surface`, `Border`, `Danger`, etc.). Hardcoding colors (e.g., `text-gray-900`) is strictly prohibited. All visual values must originate from the centralized `src/core/theme/tokens.ts` and Tailwind CSS variables.
 
 ---
 *Document designed for long-term scalability and maintainability.*

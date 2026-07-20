@@ -22,7 +22,7 @@ export class SettingsRepository {
       logoBase64: '',
       defaultTaxRate: 0,
       defaultTerms: 'Net 30',
-      currency: 'USD',
+      currency: 'PKR',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
