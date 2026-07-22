@@ -32,6 +32,9 @@ export const InvoiceSchema = z.object({
   totalAmount: z.number().min(0),
   notes: z.string().optional().or(z.literal('')),
   terms: z.string().optional().or(z.literal('')),
+  billingAddress: z.string().optional().or(z.literal('')),
+  paymentMethod: z.string().optional().or(z.literal('')),
+  latePenalty: z.string().optional().or(z.literal('')),
   currency: z.string().optional(),
   discount: z.object({
     type: z.enum(['percentage', 'fixed']),
