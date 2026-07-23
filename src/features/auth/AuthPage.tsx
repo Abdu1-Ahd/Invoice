@@ -22,9 +22,10 @@ export const AuthPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-surface p-8 rounded-2xl border border-border-subtle shadow-sm text-center space-y-6">
-        <div>
-          <Typography variant="h1" className="mb-2">Welcome to Invoice</Typography>
-          <Typography variant="body" className="text-muted-foreground">Sign in to sync your data across devices.</Typography>
+        <div className="flex flex-col items-center">
+          <img src="/assets/icon.png" alt="Ledgerly Logo" className="h-16 w-16 object-contain mb-4" />
+          <Typography variant="h1" className="mb-2">Welcome to Ledgerly</Typography>
+          <Typography variant="body" className="text-muted-foreground">Sign in to sync your financial platform data across devices.</Typography>
         </div>
 
         <div className="pt-4">
