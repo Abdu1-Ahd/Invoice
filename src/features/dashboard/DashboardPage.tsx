@@ -147,33 +147,39 @@ export const DashboardPage: React.FC = () => {
 
         {/* Total Invoices & Total Customers Counts */}
         <div className="space-y-4">
-          <div className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between">
+          <Link
+            to="/invoices"
+            className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between hover:shadow-md hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group block"
+          >
             <div className="space-y-1">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs">
+              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs group-hover:text-accent transition-colors">
                 Total Invoices
               </Typography>
               <Typography variant="h2" className="text-3xl font-black text-text-primary">
                 {invoices.length}
               </Typography>
             </div>
-            <div className="p-4 rounded-full bg-accent/15 text-accent">
+            <div className="p-4 rounded-full bg-accent/15 text-accent group-hover:scale-105 transition-transform">
               <FileText className="w-8 h-8" />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between">
+          <Link
+            to="/customers"
+            className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between hover:shadow-md hover:border-success/40 hover:-translate-y-0.5 transition-all cursor-pointer group block"
+          >
             <div className="space-y-1">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs">
+              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs group-hover:text-success transition-colors">
                 Total Customers
               </Typography>
               <Typography variant="h2" className="text-3xl font-black text-text-primary">
                 {customers.length}
               </Typography>
             </div>
-            <div className="p-4 rounded-full bg-success/15 text-success">
+            <div className="p-4 rounded-full bg-success/15 text-success group-hover:scale-105 transition-transform">
               <Users className="w-8 h-8" />
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </div>
