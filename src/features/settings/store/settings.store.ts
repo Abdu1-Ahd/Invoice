@@ -11,6 +11,12 @@ interface SettingsState {
   updateSettings: (payload: SettingsPayload) => Promise<void>;
 }
 
+const applyThemeToDom = (theme?: string) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', theme || 'default');
+  }
+};
+
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: null,
   isLoading: false,
@@ -20,6 +26,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const settings = await SettingsRepository.get();
+      applyThemeToDom(settings.theme);
       set({ settings, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -29,6 +36,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   updateSettings: async (payload: SettingsPayload) => {
     try {
       const updated = await SettingsRepository.update(payload);
+      applyThemeToDom(updated.theme);
       set({ settings: updated });
     } catch (error: any) {
       set({ error: error.message });

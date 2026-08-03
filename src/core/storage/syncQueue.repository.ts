@@ -9,7 +9,9 @@ export class SyncQueueRepository {
     const db = await getDB();
     const all = await db.getAll('syncQueue');
     return all
-      .filter((item: SyncQueueItem) => item.status === 'PENDING' || item.status === 'ERROR')
+      .filter((item: SyncQueueItem & { retryCount?: number }) => 
+        item.status === 'PENDING' || (item.status === 'ERROR' && (item.retryCount || 0) < 3)
+      )
       .sort((a, b) => a.createdAt - b.createdAt); // oldest first to maintain correct sequence
   }
 
@@ -22,13 +24,29 @@ export class SyncQueueRepository {
   }
 
   /**
-   * Mark item as error.
+   * Remove multiple items from queue after successful batched sync.
+   */
+  static async removeMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const db = await getDB();
+    const tx = db.transaction('syncQueue', 'readwrite');
+    const store = tx.objectStore('syncQueue');
+    for (const id of ids) {
+      await store.delete(id);
+    }
+    await tx.done;
+  }
+
+  /**
+   * Mark item as error and increment retryCount.
    */
   static async markError(id: string): Promise<void> {
     const db = await getDB();
     const existing = await db.get('syncQueue', id);
     if (existing) {
-      await db.put('syncQueue', { ...existing, status: 'ERROR' });
+      const retryCount = (existing.retryCount || 0) + 1;
+      const newStatus = retryCount >= 3 ? 'FAILED' : 'ERROR';
+      await db.put('syncQueue', { ...existing, status: newStatus, retryCount });
     }
   }
 

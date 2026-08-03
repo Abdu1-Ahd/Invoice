@@ -11,6 +11,7 @@ interface SyncState {
 
   setOnlineStatus: (status: boolean) => void;
   processQueue: () => Promise<void>;
+  pullRemoteData: () => Promise<void>;
   checkPendingCount: () => Promise<void>;
 }
 
@@ -33,9 +34,9 @@ export const useSyncStore = create<SyncState>((set, get) => ({
 
   processQueue: async () => {
     const { isOnline, isSyncing } = get();
-    const { isAuthenticated } = useAuthStore.getState();
+    const { isAuthenticated, user } = useAuthStore.getState();
 
-    if (!isOnline || isSyncing || !isAuthenticated) return;
+    if (!isOnline || isSyncing || !isAuthenticated || !user) return;
 
     set({ isSyncing: true });
 
@@ -44,30 +45,54 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       set({ pendingItemsCount: pendingItems.length });
 
       if (pendingItems.length === 0) {
-        set({ isSyncing: false });
         return;
       }
 
-      for (const item of pendingItems) {
-        try {
-          await CloudSyncService.pushOperation(item);
-          await SyncQueueRepository.remove(item.id);
-        } catch (error) {
-          console.error(`Sync failed for item ${item.id}`, error);
-          await SyncQueueRepository.markError(item.id);
-          // If it's a critical auth error, maybe break. Otherwise, continue to next.
+      try {
+        // Technique 3: Batched atomic sync via Firestore writeBatch
+        const successIds = await CloudSyncService.pushBatch(pendingItems);
+        await SyncQueueRepository.removeMany(successIds);
+      } catch (batchError) {
+        console.warn('Batched sync failed, falling back to individual item processing:', batchError);
+        // Fallback to item-by-item if a batch commit fails so valid items succeed and errors are marked
+        for (const item of pendingItems) {
+          try {
+            await CloudSyncService.pushOperation(item);
+            await SyncQueueRepository.remove(item.id);
+          } catch (error) {
+            console.error(`Sync failed for item ${item.id}`, error);
+            await SyncQueueRepository.markError(item.id);
+          }
         }
       }
 
       const remaining = await SyncQueueRepository.getPending();
       set({ 
-        isSyncing: false, 
         lastSyncTime: Date.now(),
         pendingItemsCount: remaining.length 
       });
 
     } catch (error) {
       console.error('Queue processing failed entirely', error);
+    } finally {
+      set({ isSyncing: false });
+    }
+  },
+
+  pullRemoteData: async () => {
+    const { isOnline, isSyncing } = get();
+    const { user } = useAuthStore.getState();
+
+    if (!isOnline || isSyncing || !user) return;
+
+    set({ isSyncing: true });
+
+    try {
+      await CloudSyncService.pullAllUserData(user.uid);
+      set({ lastSyncTime: Date.now() });
+    } catch (error) {
+      console.error('Failed to pull remote user data:', error);
+    } finally {
       set({ isSyncing: false });
     }
   },

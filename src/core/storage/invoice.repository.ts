@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDB } from './db';
 import { Invoice, InvoiceItem, FullInvoicePayload } from '@/domain/invoice';
 import { calculateInvoiceTotals } from '@/features/invoices/utils/calculations';
+import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
 export class InvoiceRepository {
   /**
@@ -29,7 +30,7 @@ export class InvoiceRepository {
   }
 
   /**
-   * Create a new invoice and its items.
+   * Create a new invoice and its items (Technique 2: embedded items in a single sync write).
    */
   static async create(payload: FullInvoicePayload): Promise<Invoice> {
     const db = await getDB();
@@ -68,30 +69,23 @@ export class InvoiceRepository {
     const tx = db.transaction(['invoices', 'invoiceItems', 'syncQueue'], 'readwrite');
     
     await tx.objectStore('invoices').add(newInvoice);
+    // Embed items directly inside invoice payload to avoid N extra Firestore writes
     await tx.objectStore('syncQueue').add({
       id: uuidv4(),
       entityType: 'invoice',
       entityId: newInvoice.id,
       operation: 'CREATE',
-      payload: newInvoice,
+      payload: { ...newInvoice, items: newItems },
       status: 'PENDING',
       createdAt: now,
     });
 
     for (const item of newItems) {
       await tx.objectStore('invoiceItems').add(item);
-      await tx.objectStore('syncQueue').add({
-        id: uuidv4(),
-        entityType: 'invoiceItem',
-        entityId: item.id,
-        operation: 'CREATE',
-        payload: item,
-        status: 'PENDING',
-        createdAt: now,
-      });
     }
 
     await tx.done;
+    triggerInstantSync();
     return newInvoice;
   }
 
@@ -119,10 +113,11 @@ export class InvoiceRepository {
     });
 
     await tx.done;
+    triggerInstantSync();
   }
 
   /**
-   * Soft delete an invoice and its items.
+   * Soft delete an invoice and its items (Technique 2: single delete sync operation).
    */
   static async delete(id: string): Promise<void> {
     const db = await getDB();
@@ -143,7 +138,7 @@ export class InvoiceRepository {
       entityType: 'invoice',
       entityId: id,
       operation: 'DELETE',
-      payload: { deletedAt: now },
+      payload: { deletedAt: now, updatedAt: now },
       status: 'PENDING',
       createdAt: now,
     });
@@ -152,17 +147,10 @@ export class InvoiceRepository {
       if (item.deletedAt !== null) continue;
       const updatedItem = { ...item, deletedAt: now, updatedAt: now };
       await tx.objectStore('invoiceItems').put(updatedItem);
-      await tx.objectStore('syncQueue').add({
-        id: uuidv4(),
-        entityType: 'invoiceItem',
-        entityId: item.id,
-        operation: 'DELETE',
-        payload: { deletedAt: now },
-        status: 'PENDING',
-        createdAt: now,
-      });
     }
 
     await tx.done;
+    triggerInstantSync();
   }
 }
+

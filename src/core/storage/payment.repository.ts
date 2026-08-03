@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDB } from './db';
 import { Payment, PaymentPayload } from '@/domain/payment';
+import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
 export class PaymentRepository {
   /**
@@ -68,6 +69,8 @@ export class PaymentRepository {
     }
 
     await tx.done;
+    triggerInstantSync();
     return newPayment;
   }
 }
+

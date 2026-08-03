@@ -18,7 +18,7 @@ export const Layout: React.FC = () => {
       <aside
         className={cn(
           'hidden flex-col border-r border-border bg-surface transition-all duration-300 ease-in-out relative md:flex z-20',
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? 'w-20' : 'w-52'
         )}
       >
         {/* Sidebar Header & Border-Centered Toggle Button */}

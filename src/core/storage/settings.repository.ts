@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDB } from './db';
 import { Settings, SettingsPayload } from '@/domain/settings';
+import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
 // We assume a single user for this local offline app
 const DEFAULT_SETTINGS_ID = 'local-settings';
@@ -13,7 +14,12 @@ export class SettingsRepository {
     const db = await getDB();
     const settings = await db.get('settings', DEFAULT_SETTINGS_ID);
     
-    if (settings) return settings;
+    if (settings) {
+      return {
+        theme: 'default',
+        ...settings,
+      };
+    }
 
     // Return defaults if none exist
     return {
@@ -23,6 +29,7 @@ export class SettingsRepository {
       defaultTaxRate: 0,
       defaultTerms: 'Net 30',
       currency: 'PKR',
+      theme: 'default',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -56,6 +63,8 @@ export class SettingsRepository {
     });
 
     await tx.done;
+    triggerInstantSync();
     return updated;
   }
 }
+

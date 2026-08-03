@@ -8,6 +8,7 @@ export const SettingsSchema = z.object({
   defaultTaxRate: z.number().min(0).max(100),
   defaultTerms: z.string().optional().or(z.literal('')),
   currency: z.string().length(3),
+  theme: z.string().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

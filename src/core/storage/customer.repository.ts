@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDB } from './db';
 import { Customer, CustomerPayload } from '@/domain/customer';
+import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
 export class CustomerRepository {
   /**
@@ -53,6 +54,7 @@ export class CustomerRepository {
     });
 
     await tx.done;
+    triggerInstantSync();
     return newCustomer;
   }
 
@@ -88,6 +90,7 @@ export class CustomerRepository {
     });
 
     await tx.done;
+    triggerInstantSync();
     return updatedCustomer;
   }
 
@@ -115,11 +118,13 @@ export class CustomerRepository {
       entityType: 'customer',
       entityId: updatedCustomer.id,
       operation: 'DELETE',
-      payload: { deletedAt: now },
+      payload: { deletedAt: now, updatedAt: now },
       status: 'PENDING',
       createdAt: now,
     });
 
     await tx.done;
+    triggerInstantSync();
   }
 }
+
