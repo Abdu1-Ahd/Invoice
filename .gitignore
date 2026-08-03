@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 .obsidian
-skills
+.skills
 
 # Editor directories and files
 .vscode/*
