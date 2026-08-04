@@ -7,6 +7,7 @@ Terse technical specification of application stack. Tabular presentation.
 | Technology | Version | Purpose & Technical Role |
 |---|---|---|
 | **React** | `19.2.7` | UI library. Stable Concurrent Mode + Suspense enabled. Zero class components. |
+| **React DOM** | `19.2.7` | React DOM rendering engine for web browser environments. |
 | **Vite** | `8.1.1` | ES module bundler & dev server. Lightning-fast Hot Module Replacement (HMR). |
 | **TypeScript** | `7.0.2` | Strict type safety. Eliminates runtime type bugs. Strict compilation targets (`tsc --noEmit`). |
 
@@ -28,6 +29,7 @@ Terse technical specification of application stack. Tabular presentation.
 | **IDB** | `8.0.3` | Promise-based IndexedDB wrapper. Offline-first local database. True source of truth. |
 | **UUID** | `14.0.1` | Universal unique identifier (v4) generation for decentralized conflict-free synchronization. |
 | **React Hook Form** | `7.81.0` | Transient performant reactive form management with minimal re-render cycles. |
+| **@hookform/resolvers** | `5.4.0` | Resolvers bridge integrating Zod validation schemas with React Hook Form boundary checks. |
 | **Zod** | `4.4.3` | Runtime domain validation schema engine. Enforced at form & persistence boundaries. |
 
 ## Cloud Synchronization & Backend Service
@@ -37,6 +39,14 @@ Terse technical specification of application stack. Tabular presentation.
 | **Firebase Modular SDK** | `12.16.0` | Cloud authentication & Firestore DB integration. |
 | **Firebase Auth** | `v12` | Email/Password & Google OAuth credentials management. |
 | **Cloud Firestore** | `v12` | Remote backup & synchronization target. Strictly Spark Plan compliant (low read/write footprint). |
+
+## PWA & Offline Service Worker
+
+| Technology | Location / Version | Purpose & Technical Role |
+|---|---|---|
+| **Custom Service Worker** | `public/sw.js` | Hand-crafted SW engine implementing Cache-First, Stale-While-Revalidate, and Network-First policies with 0 kB Workbox overhead. |
+| **Web App Manifest** | `public/manifest.json` | PWA manifest defining standalone display mode, brand themes, 10 icon sizes (including maskable & Apple touch), and app shortcuts. |
+| **PWA Lifecycle Engine** | `src/core/pwa/` | SW registration manager, `useNetworkStatus`, `usePWAInstall`, and `usePWAUpdate` hooks driving user-consented application updates. |
 
 ## Rendering & Document Engine
 

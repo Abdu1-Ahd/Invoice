@@ -12,10 +12,10 @@ Strict separation by business domain. Features never directly import from other 
 ```
 src/
 ├── app/          # Core global integration: Router, Application wrapper, Context Providers
-├── core/         # Pure domain-agnostic infrastructure: storage engines, sync worker, theme tokens, auth service
+├── core/         # Pure domain-agnostic infrastructure: storage engines, sync worker, theme tokens, auth service, pwa lifecycle
 ├── domain/       # Source of truth data contracts: TypeScript interfaces & Zod validation schemas
 ├── features/     # Isolated business capabilities: auth, customers, dashboard, invoices, payments, reports, settings, sync, templates
-└── shared/       # Reusable cross-feature primitives: dumb UI blocks (Button, Input, Select), shared layouts, generic hooks
+└── shared/       # Reusable cross-feature primitives: dumb UI blocks (Button, Input, Select, PWA/Offline banners), shared layouts, generic hooks
 ```
 
 ## Database Schema (IndexedDB & Firestore Parallel Contracts)
@@ -24,10 +24,11 @@ All entities keyed by immutable `UUIDv4`. Timestamps track state & support Last-
 | Entity Store | Primary Key | Key Fields & Types | Lifecycle Constraints |
 |---|---|---|---|
 | **`customers`** | `id` (string) | `name`, `email`, `phone`, `address`, `notes` (strings) | Mandatory: `createdAt`, `updatedAt`, `deletedAt` (soft delete) |
-| **`invoices`** | `id` (string) | `customerId`, `invoiceNumber`, `status` (`enum`), `issueDate`, `dueDate`, `billingCycle`, `currency`, `discount`, `subtotal`, `taxRate`, `taxAmount`, `totalAmount`, `notes`, `terms` | Mandatory: `createdAt`, `updatedAt`, `deletedAt` |
-| **`payments`** | `id` (string) | `invoiceId`, `amount` (number), `paymentDate`, `paymentMethod`, `notes` | Mandatory: `createdAt`, `updatedAt`, `deletedAt` |
+| **`invoices`** | `id` (string) | `customerId`, `invoiceNumber`, `status` (`enum`), `issueDate`, `dueDate`, `subtotal`, `discountAmount`, `taxableAmount`, `taxRate`, `taxAmount`, `totalAmount`, `notes`, `terms`, `billingAddress`, `paymentMethod`, `latePenalty`, `currency`, `discount` (`{type, value}`), `billingCycle` | Mandatory: `createdAt`, `updatedAt`, `deletedAt` (IDB Index: `by-customer`) |
+| **`invoiceItems`** | `id` (string) | `invoiceId` (string), `description`, `subDescription`, `quantity`, `unitPrice`, `total` (numbers/strings) | Mandatory: `createdAt`, `updatedAt`, `deletedAt` (IDB Index: `by-invoice`) |
+| **`payments`** | `id` (string) | `invoiceId`, `amount`, `method` (`enum`), `reference`, `notes`, `date` (timestamp) | Mandatory: `createdAt`, `updatedAt`, `deletedAt` (IDB Index: `by-invoice`) |
 | **`settings`** | `id` (singleton)| `userId`, `agencyName`, `logoBase64`, `defaultTaxRate`, `defaultTerms`, `currency` | Mandatory: `createdAt`, `updatedAt` |
-| **`syncQueue`** | `id` (string) | `entityType`, `entityId`, `operation` (`CREATE`\|`UPDATE`\|`DELETE`), `payload`, `status` (`PENDING`\|`FAILED`) | Temporary queue; flushed upon network connectivity |
+| **`syncQueue`** | `id` (string) | `entityType` (`customer`\|`invoice`\|`invoiceItem`\|`payment`\|`settings`), `entityId`, `operation` (`CREATE`\|`UPDATE`\|`DELETE`), `payload`, `status` (`PENDING`\|`SYNCING`\|`ERROR`) | Temporary queue; flushed upon network connectivity |
 
 ## Authentication and Roles
 - **Auth Service:** Managed via Firebase Modular SDK v12 (`src/core/auth/auth.service.ts`). Supports Email/Password + Google OAuth.
@@ -51,6 +52,20 @@ VITE_FIREBASE_STORAGE_BUCKET="ledgerly-os.firebasestorage.app"
 VITE_FIREBASE_MESSAGING_SENDER_ID="123456789"
 VITE_FIREBASE_APP_ID="1:123456789:web:abcdef"
 ```
+
+## Progressive Web App (PWA) Architecture
+For full detailed Architecture Decision Records, refer to [`PWA.md`](file:///c:/Users/athar/Documents/GitHub/Invoice/docs/PWA.md).
+
+- **Service Worker Engine (`public/sw.js`):** Hand-crafted lightweight SW with zero Workbox bundle overhead (~0 kB added).
+- **Cache Strategy Matrix:**
+  - `ledgerly-shell-v1` (Cache First): HTML shell (`/`), manifest.json
+  - `ledgerly-static-v1` (Cache First): Vite content-hashed JS/CSS bundles
+  - `ledgerly-fonts-v1` (Stale While Revalidate): Google Fonts CSS + woff2
+  - `ledgerly-images-v1` (Cache First): Static PNG, SVG, ICO, WEBP assets
+  - `ledgerly-runtime-v1` (Network First): Dynamic fallback runtime resources
+  - **Firebase Security Exclusion:** Firebase Auth and Firestore API endpoints are explicitly excluded from all caches (`shouldCache = false`) to prevent token leakage.
+- **Update Decoupling & Event Bridge:** `sw.registration.ts` dispatches custom DOM event `ledgerly:sw-update-ready`. `usePWAUpdate.ts` receives the event and renders `PWAUpdateBanner.tsx`. `SKIP_WAITING` is deferred until explicit user click to prevent in-flight edit destruction.
+- **Network Telemetry:** Centralized `useNetworkStatus.ts` hook provides single source of truth for online/offline events across `useSyncWorker` and `OfflineToast.tsx`.
 
 ## Deployment Strategy
 - **Web App Production Build:** Vite bundle compilation (`npm run build`) generates static tree-shook HTML/JS/CSS assets inside `dist/`. Deployable to any CDN / Firebase Hosting (Free Tier).

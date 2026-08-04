@@ -4,10 +4,13 @@ import { useSyncStore } from './store/sync.store';
 import { useInvoiceStore } from '@/features/invoices/store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
+import { useNetworkStatus } from '@/core/pwa/useNetworkStatus';
 
 export const useSyncWorker = () => {
   const { isAuthenticated, user } = useAuthStore();
   const { setOnlineStatus, processQueue, pullRemoteData } = useSyncStore();
+  // Centralized network status from core/pwa — single source of truth
+  const { isOnline } = useNetworkStatus();
 
   const syncAndHydrate = useCallback(async () => {
     if (!isAuthenticated || !user) return;
@@ -29,38 +32,18 @@ export const useSyncWorker = () => {
     }
   }, [isAuthenticated, user, pullRemoteData, processQueue]);
 
-  const handleOnline = useCallback(() => {
-    setOnlineStatus(true);
-    syncAndHydrate();
-  }, [setOnlineStatus, syncAndHydrate]);
-
-  const handleOffline = useCallback(() => {
-    setOnlineStatus(false);
-  }, [setOnlineStatus]);
-
-  // Handle Online / Offline events
+  // Sync online status to the Zustand sync store and trigger hydration
   useEffect(() => {
-    if (navigator.onLine) {
-      handleOnline();
-    } else {
-      handleOffline();
+    setOnlineStatus(isOnline);
+    if (isOnline) {
+      syncAndHydrate();
     }
+  }, [isOnline, setOnlineStatus, syncAndHydrate]);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [handleOnline, handleOffline]);
-
-  // Initial pull and sync on auth state ready (Technique 4: reactive sync replaces 10s polling interval)
+  // Initial pull and sync on auth state ready (reactive sync replaces polling)
   useEffect(() => {
     if (isAuthenticated && user) {
       syncAndHydrate();
     }
   }, [isAuthenticated, user, syncAndHydrate]);
 };
-
-

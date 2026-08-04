@@ -3,7 +3,7 @@ import { Typography } from '@/shared/components/Typography';
 import { useInvoiceStore } from '@/features/invoices/store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
-import { Clock, AlertCircle, CheckCircle, FileText, Users, Plus } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, FileText, Users } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatCurrency, getCurrencySymbol, fetchExchangeRates, convertCurrencyAmount, ExchangeRates } from '@/core/utils/currency';
 import { Link } from 'react-router-dom';

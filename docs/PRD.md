@@ -16,24 +16,26 @@ Traditional billing software demands constant web connectivity, introduces laten
 ## Core Features
 | Feature Module | Capabilities & Technical Implementation |
 |---|---|
-| **Offline CRM** | Customer CRUD operations stored locally in IndexedDB. Instant keyword Search & filtering. |
-| **Invoice Engine** | Interactive multi-line builder, automatic tax/discount/subtotal calculation, status lifecycle tracking (`Draft` → `Sent` → `Paid` → `Overdue`). |
-| **PDF Renderer** | Client-side PDF generation via lazy-loaded `jsPDF`/`html2canvas`. Supports embedded Base64 brand logos. |
-| **Payment Ledger** | Record manual customer payments linked to invoice UUIDs. Balance remaining tracking. |
-| **Financial Analytics** | Real-time visual metrics: aging summary, outstanding revenue, payment trend lines. |
-| **Cloud Sync Engine** | Optional Firebase Auth integration. Background delta queue pushes local mutations to Firestore without UI blocking. |
+| **Offline CRM** | Customer CRUD operations stored locally in IndexedDB. Instant keyword search, filtering, and delete safety confirmations (`ConfirmModal`). |
+| **Invoice Engine** | Interactive multi-line builder, flexible fixed/percentage discount models, taxable amount calculation, late penalty, custom billing cycles, and status lifecycle tracking (`Draft` → `Sent` → `Paid` → `Overdue`). |
+| **PDF Renderer** | Client-side PDF generation via lazy-loaded `jsPDF`/`html2canvas`. Supports embedded Base64 agency logos & custom terms. |
+| **Payment Ledger** | Record customer payments linked to invoice UUIDs supporting multiple payment methods (`Cash`, `Bank Transfer`, `Credit Card`, `PayPal`, `Other`) and reference tracking. Automatic remaining balance computation. |
+| **Financial Analytics** | Real-time visual metrics: aging summary, outstanding revenue, total revenue, and payment trend lines. |
+| **Cloud Sync Engine** | Optional Firebase Auth integration. Background delta queue drains local mutations to Firestore in batched 500-op chunks without UI blocking. |
+| **PWA Infrastructure** | Production Progressive Web App with hand-crafted `sw.js` (0 kB Workbox bundle overhead), Web App Manifest (`standalone`), Cache-First shell caching, Stale-While-Revalidate fonts, custom `PWAInstallBanner`, user-consented `PWAUpdateBanner`, and `OfflineToast` notifications. |
 
 ## App Flow
-1. **Bootstrap:** App loads from zero-latency local ES bundles. IndexedDB initializes.
+1. **Bootstrap & Service Worker:** App shell loads instantly from Service Worker Cache-First storage. `sw.registration.ts` registers `sw.js`. IndexedDB initializes.
 2. **Local Dashboard:** Metrics render instantly from local IDB stores via Zustand state slices.
 3. **Creation Flow:** User creates Customer/Invoice → Zod validates payload → Save to IDB → Optimistic UI updates.
-4. **Offline Queue:** Each local write appends mutation instruction to local `SyncQueue`.
+4. **Offline Queue:** Each local write appends mutation instruction to local `SyncQueue`. Transient network toasts (`OfflineToast`) notify user of network toggles.
 5. **Background Sync (When Online):** Worker service drains `SyncQueue` → Pushes delta timestamps (`updatedAt`) to Cloud Firestore → Resolves conflicts via Last-Write-Wins.
+6. **User-Consented Updates:** Custom DOM event `ledgerly:sw-update-ready` displays `PWAUpdateBanner`. User consent sends `SKIP_WAITING` to update without destroying active edits.
 
 ## Success Criteria
 - **Zero Latency:** Screen rendering & DB read operations < 16ms (local IDB source of truth).
-- **Offline Resilience:** 100% core features function in complete disconnect (Airplane mode).
-- **Bundle Efficiency:** Initial entry chunk < 10kB; heavy PDF libraries lazy-loaded strictly on demand.
+- **Offline Resilience:** 100% core features function in complete disconnect (Airplane mode) backed by hand-crafted Service Worker app shell caching.
+- **Bundle Efficiency:** Initial entry chunk < 10kB; zero Workbox dependency (~0 kB added); heavy PDF libraries lazy-loaded strictly on demand.
 - **Data Integrity:** Zero data corruption across offline-to-online state transitions via UUIDv4 primary keys.
 - **Accessibility & UX:** Lighthouse Performance & Accessibility score = 100. Keyboard navigation fully supported.
 

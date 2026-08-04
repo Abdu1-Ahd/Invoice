@@ -10,6 +10,10 @@ Terse tabular mapping of current application codebase under `src/`. Identifies p
 | **`src/app/Router.tsx`** | App Layer | Client-side routing topology; code-splits features via `React.lazy` + Suspense. | **Yes** – Central routing integration hub for all features. |
 | **`src/core/auth/auth.service.ts`** | Core Infra | Firebase Modular Auth wrapper (login, OAuth, logout procedures). | **Yes** – Central abstraction isolating auth engine from components. |
 | **`src/core/firebase/firebase.ts`** | Core Infra | Initializer & connection provider for Firebase v12 application app instance. | **Yes** – Central singleton supplying Firebase credentials and handlers. |
+| **`src/core/pwa/sw.registration.ts`** | Core Infra | Service Worker lifecycle manager & `ledgerly:sw-update-ready` event bridge. | **Yes** – Central PWA registration & update dispatching service. |
+| **`src/core/pwa/useNetworkStatus.ts`** | Core Infra | Centralized React hook subscribing to browser online/offline network events. | **Yes** – Single source of truth for application network status. |
+| **`src/core/pwa/usePWAInstall.ts`** | Core Infra | Custom React hook capturing `beforeinstallprompt` event and tracking install state. | **Yes** – Reusable PWA installation lifecycle controller. |
+| **`src/core/pwa/usePWAUpdate.ts`** | Core Infra | React hook listening to custom SW update event & executing consented `SKIP_WAITING`. | **Yes** – Reusable service worker update listener. |
 | **`src/core/storage/db.ts`** | Core Storage | Asynchronous IndexedDB configuration (`idb`) defining local schema stores. | **Yes** – Central localized data source of truth. |
 | **`src/core/storage/customer.repository.ts`** | Core Storage | Customer repository abstraction implementing CRUD operations to IndexedDB. | **Yes** – Decouples UI & state slices from physical DB driver. |
 | **`src/core/storage/invoice.repository.ts`** | Core Storage | Invoice repository handling IDB persistence & queuing mutations. | **Yes** – Reusable across any feature requiring invoice persistence. |
@@ -46,11 +50,16 @@ Terse tabular mapping of current application codebase under `src/`. Identifies p
 | **`src/features/sync/store/sync.store.ts`** | Feature (Sync) | Zustand state tracking queue status, remaining pending mutations, and sync errors. | **Yes** – Reactive operational feedback store consumed by UI status indicators. |
 | **`src/features/sync/utils/syncTrigger.ts`** | Feature (Sync) | Debounced signal emitter initiating immediate sync worker execution. | **Yes** – Reusable event utility triggering cloud synchronization updates. |
 | **`src/shared/components/Button.tsx`** | Shared (UI) | Accessible interactive button primitive with consistent focus & variant styles. | **Yes** – Universal atomic design UI primitive. |
+| **`src/shared/components/ConfirmModal.tsx`** | Shared (UI) | Modal dialog component for interactive user deletion & action confirmations. | **Yes** – Universal defensive action modal primitive. |
 | **`src/shared/components/CurrencySelect.tsx`** | Shared (UI) | Specialized currency selection dropdown component formatted with financial labels. | **Yes** – Reusable form selector component across billing features. |
 | **`src/shared/components/ErrorBoundary.tsx`** | Shared (UI) | Top-level React fallback barrier preventing application crashes from unhandled errors. | **Yes** – Central defensive wrapping infrastructure for robust reliability. |
+| **`src/shared/components/ErrorModal.tsx`** | Shared (UI) | Accessible modal dialog for displaying application errors and validation alerts. | **Yes** – Universal user feedback modal primitive. |
 | **`src/shared/components/Input.tsx`** | Shared (UI) | Standardized textual & numeric form input element with error highlighting. | **Yes** – Universal atomic design UI input primitive. |
 | **`src/shared/components/Label.tsx`** | Shared (UI) | Accessible semantic label component linked to interactive form inputs. | **Yes** – Universal semantic typography primitive for forms. |
 | **`src/shared/components/Layout.tsx`** | Shared (Layout) | Root responsive visual structure providing collapsible desktop sidebar & mobile tabs. | **Yes** – Core unified shell wrapping all feature views. |
+| **`src/shared/components/OfflineToast.tsx`** | Shared (UI) | Floating transient notification banner displaying real-time offline/online reconnection state. | **Yes** – Universal network feedback toast component. |
+| **`src/shared/components/PWAInstallBanner.tsx`** | Shared (UI) | Desktop & mobile install banner modal promoting application installation. | **Yes** – Universal PWA installation prompt widget. |
+| **`src/shared/components/PWAUpdateBanner.tsx`** | Shared (UI) | User-consented update banner notifying user when a new app version is ready to refresh. | **Yes** – Universal application lifecycle update notification component. |
 | **`src/shared/components/Select.tsx`** | Shared (UI) | Generic customizable HTML dropdown select control element. | **Yes** – Reusable atomic design UI dropdown primitive. |
 | **`src/shared/components/SyncStatusIndicator.tsx`** | Shared (UI) | Subtle persistent visual widget displaying live offline / syncing connection status. | **Yes** – Reusable telemetry component embedded in Layout header. |
 | **`src/shared/components/Typography.tsx`** | Shared (UI) | Typographic text component enforcing font hierarchy from token rules. | **Yes** – Universal text rendering primitive enforcing visual style guides. |
