@@ -22,50 +22,81 @@ export const CurrencySelect: React.FC<CurrencySelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState(value);
+  const [isTyping, setIsTyping] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setSearch(value);
-  }, [value]);
+    if (!isTyping) {
+      setSearch(value);
+    }
+  }, [value, isTyping]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        setIsTyping(false);
+        setSearch(value);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [value]);
 
-  const filteredCurrencies = POPULAR_CURRENCIES.filter(
-    (c) =>
-      c.code.toLowerCase().includes(search.toLowerCase()) ||
-      c.symbol.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCurrencies = POPULAR_CURRENCIES.filter((c) => {
+    if (!isTyping) return true;
+    const query = search.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      c.code.toLowerCase().includes(query) ||
+      c.symbol.toLowerCase().includes(query)
+    );
+  });
+
+  const handleFocus = () => {
+    setIsOpen(true);
+    inputRef.current?.select();
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value;
     setSearch(newVal);
+    setIsTyping(true);
     onChange(newVal.toUpperCase());
     setIsOpen(true);
   };
 
   const handleSelectOption = (currency: CurrencyOption) => {
     setSearch(currency.code);
+    setIsTyping(false);
     onChange(currency.code);
     setIsOpen(false);
+  };
+
+  const toggleOpen = () => {
+    if (!isOpen) {
+      setIsOpen(true);
+      setIsTyping(false);
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    } else {
+      setIsOpen(false);
+      setIsTyping(false);
+      setSearch(value);
+    }
   };
 
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
         <input
+          ref={inputRef}
           id={id}
           type="text"
           value={search}
           onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
+          onFocus={handleFocus}
           placeholder={placeholder}
           className={cn(
             'flex h-10 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 pr-8 uppercase font-medium',
@@ -75,7 +106,7 @@ export const CurrencySelect: React.FC<CurrencySelectProps> = ({
         />
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={toggleOpen}
           className="absolute right-2 top-2.5 text-text-muted hover:text-text-primary"
         >
           <ChevronDown className="h-4 w-4" />

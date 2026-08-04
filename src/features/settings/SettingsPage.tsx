@@ -8,45 +8,17 @@ import { Input } from '@/shared/components/Input';
 import { Label } from '@/shared/components/Label';
 import { Button } from '@/shared/components/Button';
 import { CurrencySelect } from '@/shared/components/CurrencySelect';
-import { Upload, X, Check, Palette } from 'lucide-react';
-
-const THEME_OPTIONS = [
-  {
-    id: 'default',
-    name: 'Classic Slate',
-    description: 'Clean executive light ledger with royal navy and teal accents.',
-    swatches: ['#f8fafc', '#1b497e', '#20807b', '#ffffff'],
-  },
-  {
-    id: 'navy',
-    name: 'Royal Navy & Gold',
-    description: 'Deep ocean blue paired with antique warm gold, inspired by the logo.',
-    swatches: ['#091321', '#102138', '#dcac62', '#2e938d'],
-  },
-  {
-    id: 'emerald',
-    name: 'British Emerald & Gold',
-    description: 'Sophisticated deep racing green and teal with warm golden accents.',
-    swatches: ['#071917', '#0e2a26', '#dcac62', '#2e938d'],
-  },
-  {
-    id: 'ivory',
-    name: 'Antique Parchment',
-    description: 'Old Money cream linen and cotton paper with classic sapphire typography.',
-    swatches: ['#f5f2eb', '#fcfbf9', '#1c385c', '#b88628'],
-  },
-  {
-    id: 'dark',
-    name: 'Executive Onyx',
-    description: 'Sleek obsidian midnight sapphire for high contrast executive focus.',
-    swatches: ['#0b111e', '#131d2e', '#d4a359', '#2e938d'],
-  },
-];
+import { ErrorModal } from '@/shared/components/ErrorModal';
+import { Upload, X, Check } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { settings, loadSettings, updateSettings, isLoading } = useSettingsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; title?: string; message: string }>({
+    isOpen: false,
+    message: '',
+  });
 
   const {
     register,
@@ -63,7 +35,6 @@ export const SettingsPage: React.FC = () => {
       defaultTaxRate: 0,
       defaultTerms: 'Net 30',
       currency: 'PKR',
-      theme: 'default',
     },
   });
 
@@ -79,7 +50,6 @@ export const SettingsPage: React.FC = () => {
         defaultTaxRate: settings.defaultTaxRate ?? 0,
         defaultTerms: settings.defaultTerms || 'Net 30',
         currency: settings.currency || 'PKR',
-        theme: settings.theme || 'default',
       });
     }
   }, [settings, reset]);
@@ -91,7 +61,11 @@ export const SettingsPage: React.FC = () => {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Logo must be less than 2MB');
+      setErrorModal({
+        isOpen: true,
+        title: 'File Size Exceeded',
+        message: 'The selected logo image exceeds the 2MB size limit. Please choose a smaller image file.',
+      });
       return;
     }
 
@@ -110,7 +84,6 @@ export const SettingsPage: React.FC = () => {
       currency: data.currency ? data.currency.trim().toUpperCase() : 'PKR',
       defaultTaxRate: isNaN(Number(data.defaultTaxRate)) ? 0 : Number(data.defaultTaxRate),
       defaultTerms: data.defaultTerms ? data.defaultTerms.trim() : 'Net 30',
-      theme: data.theme || 'default',
     };
     await updateSettings(payload);
     setIsSaved(true);
@@ -126,57 +99,6 @@ export const SettingsPage: React.FC = () => {
       <Typography variant="h1">Settings</Typography>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-sm">
-        {/* Theme & Appearance */}
-        <div className="space-y-4">
-          <div className="border-b border-border pb-2 flex items-center gap-2">
-            <Palette className="w-5 h-5 text-primary" />
-            <Typography variant="h3">Theme & Appearance (Old Money Palettes)</Typography>
-          </div>
-          <p className="text-sm text-text-secondary">
-            Select a refined luxury aesthetic inspired by your brand identity and logo colors. The theme transforms the application instantly.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {THEME_OPTIONS.map((t) => {
-              const isSelected = (watch('theme') || 'default') === t.id;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => {
-                    setValue('theme', t.id, { shouldDirty: true });
-                    document.documentElement.setAttribute('data-theme', t.id);
-                  }}
-                  className={`cursor-pointer relative rounded-xl border-2 p-4 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
-                    isSelected
-                      ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
-                      : 'border-border bg-surface hover:border-text-muted'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="font-semibold text-text-primary text-sm tracking-tight">{t.name}</span>
-                      {isSelected && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm flex-shrink-0">
-                          <Check className="w-3 h-3" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-text-muted line-clamp-2 leading-relaxed mb-4">{t.description}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 p-2 rounded-lg border border-border bg-muted/30">
-                    {t.swatches.map((color, idx) => (
-                      <span
-                        key={idx}
-                        className="h-6 w-6 rounded-full border border-black/10 shadow-inner flex-shrink-0 transition-transform duration-300 hover:scale-110"
-                        style={{ backgroundColor: color }}
-                        title={`Color swatch ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
         {/* Branding */}
         <div className="space-y-4">
@@ -271,6 +193,13 @@ export const SettingsPage: React.FC = () => {
           </Button>
         </div>
       </form>
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

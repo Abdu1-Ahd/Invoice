@@ -1,17 +1,18 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Typography } from '@/shared/components/Typography';
 import { useInvoiceStore } from '@/features/invoices/store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
-import { DollarSign, Clock, AlertCircle, CheckCircle, FileText, Users, Plus } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, FileText, Users, Plus } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
-import { formatCurrency } from '@/core/utils/currency';
+import { formatCurrency, getCurrencySymbol, fetchExchangeRates, convertCurrencyAmount, ExchangeRates } from '@/core/utils/currency';
 import { Link } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
   const { invoices, loadInvoices } = useInvoiceStore();
   const { customers, loadCustomers } = useCustomerStore();
   const { settings, loadSettings } = useSettingsStore();
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -21,6 +22,23 @@ export const DashboardPage: React.FC = () => {
 
   const currencyCode = settings?.currency || 'PKR';
 
+  // Optimized API execution: only fetch rates if there is at least one invoice in a different currency
+  useEffect(() => {
+    const foreignCurrencies = new Set<string>();
+    invoices.forEach(inv => {
+      if (inv.currency && inv.currency !== currencyCode) {
+        foreignCurrencies.add(inv.currency);
+      }
+    });
+    foreignCurrencies.add(currencyCode);
+
+    if (foreignCurrencies.size > 1) {
+      fetchExchangeRates(Array.from(foreignCurrencies)).then(rates => {
+        if (rates) setExchangeRates(rates);
+      });
+    }
+  }, [invoices, currencyCode]);
+
   const metrics = useMemo(() => {
     let totalRevenue = 0;
     let outstanding = 0;
@@ -28,25 +46,32 @@ export const DashboardPage: React.FC = () => {
     let draft = 0;
 
     invoices.forEach((inv) => {
-      if (inv.status === 'Paid') totalRevenue += inv.totalAmount;
-      if (inv.status === 'Sent') outstanding += inv.totalAmount;
-      if (inv.status === 'Overdue') overdue += inv.totalAmount;
-      if (inv.status === 'Draft') draft += inv.totalAmount;
+      const convertedAmount = convertCurrencyAmount(inv.totalAmount, inv.currency || currencyCode, currencyCode, exchangeRates);
+      if (inv.status === 'Paid') totalRevenue += convertedAmount;
+      if (inv.status === 'Sent') outstanding += convertedAmount;
+      if (inv.status === 'Overdue') overdue += convertedAmount;
+      if (inv.status === 'Draft') draft += convertedAmount;
     });
 
     return { totalRevenue, outstanding, overdue, draft };
-  }, [invoices]);
+  }, [invoices, currencyCode, exchangeRates]);
 
-  const MetricCard = ({ title, value, icon: Icon, colorClass }: any) => (
+  const MetricCard = ({ title, value, icon: Icon, customIcon, colorClass }: any) => (
     <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-sm flex items-center gap-3.5 min-w-0 w-full overflow-hidden">
-      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0', colorClass)}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0 flex items-center justify-center', colorClass)}>
+        {customIcon ? (
+          <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-extrabold text-lg sm:text-lg tracking-tight leading-none">
+            {customIcon}
+          </span>
+        ) : (
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
-        <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs truncate block">
+        <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs block">
           {title}
         </Typography>
-        <Typography variant="h2" className="mt-0.5 text-lg sm:text-xl font-bold text-text-primary truncate block">
+        <Typography variant="h2" className="mt-0.5 text-lg sm:text-xl font-bold text-text-primary block">
           {formatCurrency(value, currencyCode)}
         </Typography>
       </div>
@@ -58,26 +83,26 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Typography variant="h1">Dashboard</Typography>
-          <Typography variant="body" className="text-text-muted mt-1">
+          {/* <Typography variant="body" className="text-text-muted mt-1">
             Welcome back! Here is a summary of your invoicing activity.
-          </Typography>
+          </Typography> */}
         </div>
-        <div className="flex gap-3">
+        {/* <div className="flex gap-3">
           <Link
             to="/invoices"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" /> Create Invoice
           </Link>
-        </div>
+        </div> */}
       </div>
 
-      {/* Responsive Financial Cards Grid: 1 on mobile, 2 on tablet, 4 on desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* Responsive Financial Cards Grid: 1 on mobile, 2 on tablet & desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
         <MetricCard
           title="Total Revenue"
           value={metrics.totalRevenue}
-          icon={DollarSign}
+          customIcon={getCurrencySymbol(currencyCode)}
           colorClass="bg-success/15 text-success"
         />
         <MetricCard
@@ -100,9 +125,46 @@ export const DashboardPage: React.FC = () => {
         />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">        
+        {/* Total Invoices & Total Customers Counts */}
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 lg:gap-6 lg:self-start order-1 lg:order-2">
+          <Link
+            to="/invoices"
+            className="bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+          >
+            <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
+              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-accent transition-colors block truncate">
+                Total Invoices
+              </Typography>
+              <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
+                {invoices.length}
+              </Typography>
+            </div>
+            <div className="p-3 sm:p-4 rounded-full bg-accent/15 text-accent group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
+          </Link>
+
+          <Link
+            to="/customers"
+            className="bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-success/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+          >
+            <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
+              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-success transition-colors block truncate">
+                Total Customers
+              </Typography>
+              <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
+                {customers.length}
+              </Typography>
+            </div>
+            <div className="p-3 sm:p-4 rounded-full bg-success/15 text-success group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
+          </Link>
+        </div>
+
       {/* Recent Invoices & Total Counts (Invoices & Customers) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-surface p-6 rounded-xl border border-border shadow-sm">
+        <div className="lg:col-span-2 bg-surface p-6 rounded-xl border border-border shadow-sm order-2 lg:order-1">
           <div className="flex justify-between items-center mb-4">
             <Typography variant="h3">Recent Invoices</Typography>
             <Link to="/invoices" className="text-xs font-semibold text-accent hover:underline">
@@ -143,43 +205,6 @@ export const DashboardPage: React.FC = () => {
               })
             )}
           </div>
-        </div>
-
-        {/* Total Invoices & Total Customers Counts */}
-        <div className="space-y-4">
-          <Link
-            to="/invoices"
-            className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between hover:shadow-md hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group block"
-          >
-            <div className="space-y-1">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs group-hover:text-accent transition-colors">
-                Total Invoices
-              </Typography>
-              <Typography variant="h2" className="text-3xl font-black text-text-primary">
-                {invoices.length}
-              </Typography>
-            </div>
-            <div className="p-4 rounded-full bg-accent/15 text-accent group-hover:scale-105 transition-transform">
-              <FileText className="w-8 h-8" />
-            </div>
-          </Link>
-
-          <Link
-            to="/customers"
-            className="bg-surface p-6 rounded-xl border border-border shadow-sm flex items-center justify-between hover:shadow-md hover:border-success/40 hover:-translate-y-0.5 transition-all cursor-pointer group block"
-          >
-            <div className="space-y-1">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs group-hover:text-success transition-colors">
-                Total Customers
-              </Typography>
-              <Typography variant="h2" className="text-3xl font-black text-text-primary">
-                {customers.length}
-              </Typography>
-            </div>
-            <div className="p-4 rounded-full bg-success/15 text-success group-hover:scale-105 transition-transform">
-              <Users className="w-8 h-8" />
-            </div>
-          </Link>
         </div>
       </div>
     </div>

@@ -3,9 +3,9 @@ import { useInvoiceStore } from '@/features/invoices/store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { Typography } from '@/shared/components/Typography';
-import { DollarSign, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
-import { formatCurrency } from '@/core/utils/currency';
+import { formatCurrency, getCurrencySymbol } from '@/core/utils/currency';
 
 export const ReportsPage: React.FC = () => {
   const { invoices, loadInvoices } = useInvoiceStore();
@@ -36,10 +36,16 @@ export const ReportsPage: React.FC = () => {
     return { totalRevenue, outstanding, overdue, draft };
   }, [invoices]);
 
-  const MetricCard = ({ title, value, icon: Icon, colorClass }: any) => (
+  const MetricCard = ({ title, value, icon: Icon, customIcon, colorClass }: any) => (
     <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-sm flex items-center gap-3.5 min-w-0 w-full overflow-hidden">
-      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0', colorClass)}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0 flex items-center justify-center', colorClass)}>
+        {customIcon ? (
+          <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-extrabold text-xs sm:text-sm tracking-tight leading-none">
+            {customIcon}
+          </span>
+        ) : (
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs truncate block">
@@ -61,7 +67,7 @@ export const ReportsPage: React.FC = () => {
         <MetricCard
           title="Total Revenue"
           value={metrics.totalRevenue}
-          icon={DollarSign}
+          customIcon={getCurrencySymbol(currencyCode)}
           colorClass="bg-success/15 text-success"
         />
         <MetricCard

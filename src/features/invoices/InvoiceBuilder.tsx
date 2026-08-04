@@ -12,7 +12,7 @@ import { Button } from '@/shared/components/Button';
 import { Select } from '@/shared/components/Select';
 import { CurrencySelect } from '@/shared/components/CurrencySelect';
 import { Typography } from '@/shared/components/Typography';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Check } from 'lucide-react';
 import { useKeyboardShortcut } from '@/shared/hooks/useKeyboardShortcut';
 
 interface InvoiceBuilderProps {
@@ -39,6 +39,8 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
   const { customers, loadCustomers } = useCustomerStore();
   const { settings, loadSettings } = useSettingsStore();
   const [customerOptions, setCustomerOptions] = useState<{ label: string; value: string }[]>([]);
+  const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [isSentSaved, setIsSentSaved] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -103,6 +105,13 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
     }
   }, [watchCustomerId, customers, setValue]);
 
+  // Auto initialize invoice currency from settings if not yet set
+  useEffect(() => {
+    if (!watch('invoice.currency') && settings?.currency) {
+      setValue('invoice.currency', settings.currency);
+    }
+  }, [settings, watch, setValue]);
+
   const { subtotal, discountAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
     watchItems || [],
     watchTaxRate || 0,
@@ -112,7 +121,14 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
   const submitting = isLoading || isSubmitting;
 
   const onSave = async (data: FullInvoicePayload) => {
-    await onSubmit(data);
+    const payload = {
+      ...data,
+      invoice: {
+        ...data.invoice,
+        currency: data.invoice.currency || settings?.currency || 'PKR',
+      },
+    };
+    await onSubmit(payload);
   };
 
   // CMD+S shortcut to save as Draft/Current Status
@@ -171,7 +187,7 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-16">
+    <form onSubmit={handleSubmit(onSave)} className="space-y-8 pb-16">
       {/* Header Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface border border-border rounded-xl shadow-sm">
         <div className="space-y-4">
@@ -441,25 +457,49 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Button
             type="button"
-            variant="secondary"
-            onClick={handleSubmit(onSave)}
-            className="w-full sm:w-auto whitespace-nowrap"
+            variant={isDraftSaved ? "secondary" : "secondary"}
+            onClick={handleSubmit(async (data) => {
+              if (isDraftSaved || isSentSaved) return;
+              setIsDraftSaved(true);
+              await onSave(data);
+              setTimeout(() => setIsDraftSaved(false), 2000);
+            })}
+            disabled={isDraftSaved || submitting}
+            className={isDraftSaved ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300 w-full sm:w-auto whitespace-nowrap" : "w-full sm:w-auto whitespace-nowrap"}
           >
-            Save Draft{' '}
-            <span className="ml-2 text-xs opacity-50 font-normal border border-border-subtle px-1.5 rounded bg-muted/50 hidden sm:inline-block">
-              ⌘ S
-            </span>
+            {isDraftSaved ? (
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4" /> Saved Draft!
+              </span>
+            ) : (
+              <>
+                Save Draft{' '}
+                <span className="ml-2 text-xs opacity-50 font-normal border border-border-subtle px-1.5 rounded bg-muted/50 hidden sm:inline-block">
+                  ⌘ S
+                </span>
+              </>
+            )}
           </Button>
           <Button
             type="button"
-            variant="primary"
-            onClick={handleSubmit((data) => {
+            variant={isSentSaved ? "secondary" : "primary"}
+            onClick={handleSubmit(async (data) => {
+              if (isDraftSaved || isSentSaved) return;
+              setIsSentSaved(true);
               setValue('invoice.status', 'Sent');
-              onSave({ ...data, invoice: { ...data.invoice, status: 'Sent' } });
+              await onSave({ ...data, invoice: { ...data.invoice, status: 'Sent' } });
+              setTimeout(() => setIsSentSaved(false), 2000);
             })}
-            className="w-full sm:w-auto whitespace-nowrap"
+            disabled={isSentSaved || submitting}
+            className={isSentSaved ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300 w-full sm:w-auto whitespace-nowrap" : "w-full sm:w-auto whitespace-nowrap"}
           >
-            Save & Mark as Sent
+            {isSentSaved ? (
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4" /> Saved & Sent!
+              </span>
+            ) : (
+              'Save & Mark as Sent'
+            )}
           </Button>
         </div>
       </div>

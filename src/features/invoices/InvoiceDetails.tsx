@@ -3,11 +3,13 @@ import { useInvoiceStore } from './store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { Typography } from '@/shared/components/Typography';
 import { Button } from '@/shared/components/Button';
-import { FileDown, ArrowLeft, Send, CheckCircle, Trash2 } from 'lucide-react';
+import { FileDown, ArrowLeft, Send, CheckCircle, Trash2, Check } from 'lucide-react';
 import { generateInvoicePDF } from './utils/pdfGenerator';
 import { StandardTemplate } from '@/features/invoice-templates/StandardTemplate';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { formatCurrency } from '@/core/utils/currency';
+import { ConfirmModal } from '@/shared/components/ConfirmModal';
+import { ErrorModal } from '@/shared/components/ErrorModal';
 
 interface InvoiceDetailsProps {
   onBack: () => void;
@@ -18,6 +20,14 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
   const { customers } = useCustomerStore();
   const { settings, loadSettings } = useSettingsStore();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; title?: string; message: string }>({
+    isOpen: false,
+    message: '',
+  });
 
   useEffect(() => {
     loadSettings();
@@ -25,7 +35,7 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
 
   if (isLoading || !activeInvoice || !settings) {
     return (
-      <div className="p-8 flex justify-center items-center">
+      <div className="p-8 flex justify-center items-center min-h-[400px]">
         <Typography variant="body" className="animate-pulse">Loading invoice...</Typography>
       </div>
     );
@@ -37,14 +47,42 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
   const billingAddr = invoice.billingAddress || customer?.address || customer?.email;
 
   const handleDownloadPDF = async () => {
+    if (isDownloaded) return;
     setIsGenerating(true);
     try {
       await generateInvoicePDF(invoice.invoiceNumber, `pdf-template-${invoice.id}`);
-    } catch (err) {
+      setIsDownloaded(true);
+      setTimeout(() => setIsDownloaded(false), 2500);
+    } catch (err: any) {
       console.error('PDF Download failed', err);
+      setErrorModal({
+        isOpen: true,
+        title: 'PDF Download Failed',
+        message: 'We were unable to render the PDF file for this invoice right now. Please try again.',
+      });
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleMarkAsSent = async () => {
+    if (isSent) return;
+    setIsSent(true);
+    await updateInvoiceStatus(invoice.id, 'Sent');
+    setTimeout(() => setIsSent(false), 2000);
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (isPaid) return;
+    setIsPaid(true);
+    await updateInvoiceStatus(invoice.id, 'Paid');
+    setTimeout(() => setIsPaid(false), 2000);
+  };
+
+  const handleDeleteInvoice = async () => {
+    setShowDeleteConfirm(false);
+    await deleteInvoice(invoice.id);
+    onBack();
   };
 
   return (
@@ -55,27 +93,62 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Invoices
         </Button>
         <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" onClick={handleDownloadPDF} isLoading={isGenerating}>
-            <FileDown className="w-4 h-4 mr-2" /> Download PDF
+          <Button
+            variant={isDownloaded ? "secondary" : "ghost"}
+            onClick={handleDownloadPDF}
+            isLoading={isGenerating}
+            disabled={isDownloaded}
+            className={isDownloaded ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300" : ""}
+          >
+            {isDownloaded ? (
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4" /> Downloaded!
+              </span>
+            ) : (
+              <>
+                <FileDown className="w-4 h-4 mr-2" /> Download PDF
+              </>
+            )}
           </Button>
           {invoice.status === 'Draft' && (
-            <Button variant="secondary" onClick={() => updateInvoiceStatus(invoice.id, 'Sent')}>
-              <Send className="w-4 h-4 mr-2" /> Mark as Sent
+            <Button
+              variant={isSent ? "secondary" : "secondary"}
+              onClick={handleMarkAsSent}
+              disabled={isSent}
+              className={isSent ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300" : ""}
+            >
+              {isSent ? (
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4" /> Marked as Sent!
+                </span>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" /> Mark as Sent
+                </>
+              )}
             </Button>
           )}
           {invoice.status === 'Sent' && (
-            <Button variant="primary" onClick={() => updateInvoiceStatus(invoice.id, 'Paid')}>
-              <CheckCircle className="w-4 h-4 mr-2" /> Mark as Paid
+            <Button
+              variant={isPaid ? "secondary" : "primary"}
+              onClick={handleMarkAsPaid}
+              disabled={isPaid}
+              className={isPaid ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300" : ""}
+            >
+              {isPaid ? (
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4" /> Marked as Paid!
+                </span>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" /> Mark as Paid
+                </>
+              )}
             </Button>
           )}
           <Button
             variant="danger"
-            onClick={async () => {
-              if (window.confirm('Delete this invoice forever?')) {
-                await deleteInvoice(invoice.id);
-                onBack();
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -243,6 +316,24 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
           />
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Delete Invoice?"
+        message="Are you sure you want to permanently delete this invoice? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={handleDeleteInvoice}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

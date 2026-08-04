@@ -1,16 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Typography } from '@/shared/components/Typography';
 import { Button } from '@/shared/components/Button';
 import { useCustomerStore } from './store/customer.store';
-import { CustomerList } from './CustomerList';
 import { CustomerEditor } from './CustomerEditor';
 import { Customer, CustomerPayload } from '@/domain/customer';
 import { Users } from 'lucide-react';
+import { ConfirmModal } from '@/shared/components/ConfirmModal';
+
+const CustomerList = lazy(() => import('./CustomerList').then(m => ({ default: m.CustomerList })));
 
 export const CustomersPage: React.FC = () => {
   const { customers, loadCustomers, createCustomer, updateCustomer, deleteCustomer, isLoading } = useCustomerStore();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>();
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | undefined>();
 
   useEffect(() => {
     loadCustomers();
@@ -33,6 +36,14 @@ export const CustomersPage: React.FC = () => {
       await createCustomer(payload);
     }
     setIsEditorOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (customerToDelete) {
+      await deleteCustomer(customerToDelete.id);
+      setCustomerToDelete(undefined);
+      setIsEditorOpen(false);
+    }
   };
 
   if (isLoading && customers.length === 0) {
@@ -61,16 +72,22 @@ export const CustomersPage: React.FC = () => {
         
         {editingCustomer && (
           <div className="mt-8 pt-8 border-t border-border-subtle flex justify-end">
-             <Button variant="danger" onClick={async () => {
-                if (window.confirm('Are you sure you want to delete this customer?')) {
-                  await deleteCustomer(editingCustomer.id);
-                  setIsEditorOpen(false);
-                }
-             }}>
+             <Button variant="danger" onClick={() => setCustomerToDelete(editingCustomer)}>
                Delete Customer
              </Button>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={!!customerToDelete}
+          title="Delete Customer?"
+          message={`Are you sure you want to permanently delete customer "${customerToDelete?.name || ''}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setCustomerToDelete(undefined)}
+        />
       </div>
     );
   }
@@ -97,15 +114,19 @@ export const CustomersPage: React.FC = () => {
 
   // --- LIST VIEW ---
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex-1 flex flex-col p-4 sm:p-8 pb-0 sm:pb-0 max-w-7xl w-full mx-auto min-h-0">
+      <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
         <Typography variant="h1">Customers</Typography>
         <Button variant="primary" onClick={handleCreateNew}>
           Add Customer
         </Button>
       </div>
       
-      <CustomerList customers={customers} onSelect={handleEdit} />
+      <div className="flex-1 min-h-0 flex flex-col pb-1">
+        <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Loading list...</div>}>
+          <CustomerList customers={customers} onSelect={handleEdit} />
+        </Suspense>
+      </div>
     </div>
   );
 };

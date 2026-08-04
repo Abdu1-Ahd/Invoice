@@ -4,7 +4,6 @@ export const generateInvoicePDF = async (
 ) => {
   const element = document.getElementById(elementId);
   if (!element) {
-    alert('Invoice template element not found. Please try again.');
     throw new Error(`Invoice element with id "${elementId}" not found`);
   }
 
@@ -52,7 +51,6 @@ export const generateInvoicePDF = async (
     pdf.save(filename);
   } catch (error: any) {
     console.error('Failed to generate PDF:', error);
-    alert(`Could not download PDF: ${error.message || 'Unknown error'}`);
     throw error;
   }
 };

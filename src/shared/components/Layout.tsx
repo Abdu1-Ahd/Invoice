@@ -13,7 +13,7 @@ export const Layout: React.FC = () => {
   useSyncWorker();
 
   return (
-    <div className="flex h-screen w-full bg-muted overflow-hidden">
+    <div className="flex h-screen h-[100dvh] w-full bg-muted overflow-hidden">
       {/* Desktop Sidebar with Sliding Animation */}
       <aside
         className={cn(
@@ -71,7 +71,7 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area with Bottom Padding for Mobile Nav */}
-      <main className="flex-1 overflow-y-auto bg-muted pb-28 md:pb-10">
+      <main className="flex-1 overflow-y-auto bg-muted flex flex-col pb-16 md:pb-6">
         <Outlet />
       </main>
 

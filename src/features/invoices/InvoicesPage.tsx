@@ -1,26 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Typography } from '@/shared/components/Typography';
 import { Button } from '@/shared/components/Button';
 import { useInvoiceStore } from './store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
-import { InvoiceList } from './InvoiceList';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { InvoiceBuilder } from './InvoiceBuilder';
 import { InvoiceDetails } from './InvoiceDetails';
 import { FullInvoicePayload } from '@/domain/invoice';
 import { FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const InvoiceList = lazy(() => import('./InvoiceList').then(m => ({ default: m.InvoiceList })));
+
 type ViewState = 'list' | 'builder' | 'details';
 
 export const InvoicesPage: React.FC = () => {
   const { invoices, loadInvoices, loadInvoice, createInvoice, isLoading } = useInvoiceStore();
   const { customers, loadCustomers } = useCustomerStore();
+  const { loadSettings } = useSettingsStore();
   const [viewState, setViewState] = useState<ViewState>('list');
 
   useEffect(() => {
     loadInvoices();
     loadCustomers();
-  }, [loadInvoices, loadCustomers]);
+    loadSettings();
+  }, [loadInvoices, loadCustomers, loadSettings]);
 
   const handleCreateNew = () => {
     setViewState('builder');
@@ -103,15 +107,19 @@ export const InvoicesPage: React.FC = () => {
 
   // --- LIST VIEW ---
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex-1 flex flex-col p-4 sm:p-8 pb-0 sm:pb-0 max-w-7xl w-full mx-auto min-h-0">
+      <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
         <Typography variant="h1">Invoices</Typography>
         <Button variant="primary" onClick={handleCreateNew}>
           Create Invoice
         </Button>
       </div>
       
-      <InvoiceList invoices={invoices} onSelect={handleSelectInvoice} />
+      <div className="flex-1 min-h-0 flex flex-col pb-1">
+        <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Loading list...</div>}>
+          <InvoiceList invoices={invoices} onSelect={handleSelectInvoice} />
+        </Suspense>
+      </div>
     </div>
   );
 };

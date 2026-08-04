@@ -40,132 +40,8 @@
 }
 
 @layer base {
-  /* 1. Classic Slate & Navy (Default Executive Light) */
-  :root, [data-theme="default"] {
-    --color-background: #f8fafc;
-    --color-surface: #ffffff;
-    --color-card: #ffffff;
-    
-    --color-primary: #1b497e;
-    --color-primary-foreground: #ffffff;
-    --color-secondary: #f1f5f9;
-    --color-accent: #20807b;
-    
-    --color-border: #e2e8f0;
-    --color-input: #e2e8f0;
-    --color-ring: #64748b;
-    
-    --color-text-primary: #0f172a;
-    --color-text-secondary: #475569;
-    --color-text-muted: #64748b;
-    --color-text-disabled: #cbd5e1;
-    
-    --color-success: #166534;
-    --color-success-foreground: #f0fdf4;
-    --color-warning: #d4a359;
-    --color-warning-foreground: #18181b;
-    --color-danger: #ef4444;
-    --color-danger-foreground: #fef2f2;
-    --color-info: #1b497e;
-    --color-info-foreground: #eff6ff;
-    --color-muted: #f1f5f9;
-  }
-
-  /* 2. Executive Onyx (Sleek Obsidian & Gold) */
-  .dark, [data-theme="dark"] {
-    --color-background: #0b111e;
-    --color-surface: #131d2e;
-    --color-card: #131d2e;
-    
-    --color-primary: #d4a359;
-    --color-primary-foreground: #0b111e;
-    --color-secondary: #1f2d44;
-    --color-accent: #2e938d;
-    
-    --color-border: #23344d;
-    --color-input: #23344d;
-    --color-ring: #64748b;
-    
-    --color-text-primary: #f8fafc;
-    --color-text-secondary: #cbd5e1;
-    --color-text-muted: #94a3b8;
-    --color-text-disabled: #475569;
-    
-    --color-success: #166534;
-    --color-success-foreground: #f0fdf4;
-    --color-warning: #b45309;
-    --color-warning-foreground: #fffbeb;
-    --color-danger: #7f1d1d;
-    --color-danger-foreground: #fef2f2;
-    --color-info: #1e3a8a;
-    --color-info-foreground: #eff6ff;
-    --color-muted: #0f1826;
-  }
-
-  /* 3. Royal Navy & Gold (Old Money Blue - Inspired by Logo #2364AA & #DCAC62) */
-  [data-theme="navy"] {
-    --color-background: #091321;
-    --color-surface: #102138;
-    --color-card: #102138;
-    
-    --color-primary: #dcac62;
-    --color-primary-foreground: #091321;
-    --color-secondary: #1a3252;
-    --color-accent: #2e938d;
-    
-    --color-border: #1e385c;
-    --color-input: #1e385c;
-    --color-ring: #4e82b8;
-    
-    --color-text-primary: #f8fafc;
-    --color-text-secondary: #cbd5e1;
-    --color-text-muted: #94a3b8;
-    --color-text-disabled: #526f91;
-    
-    --color-success: #0f766e;
-    --color-success-foreground: #f0fdf4;
-    --color-warning: #dcac62;
-    --color-warning-foreground: #091321;
-    --color-danger: #991b1b;
-    --color-danger-foreground: #fef2f2;
-    --color-info: #2364aa;
-    --color-info-foreground: #f8fafc;
-    --color-muted: #0c182a;
-  }
-
-  /* 4. British Emerald & Gold (Old Money Teal/Green - Inspired by Logo #2E938D) */
-  [data-theme="emerald"] {
-    --color-background: #071917;
-    --color-surface: #0e2a26;
-    --color-card: #0e2a26;
-    
-    --color-primary: #dcac62;
-    --color-primary-foreground: #071917;
-    --color-secondary: #1a423d;
-    --color-accent: #2e938d;
-    
-    --color-border: #1d4642;
-    --color-input: #1d4642;
-    --color-ring: #3a8c84;
-    
-    --color-text-primary: #f3f4f6;
-    --color-text-secondary: #d1d5db;
-    --color-text-muted: #9ca3af;
-    --color-text-disabled: #4c6b67;
-    
-    --color-success: #2e938d;
-    --color-success-foreground: #071917;
-    --color-warning: #dcac62;
-    --color-warning-foreground: #071917;
-    --color-danger: #881337;
-    --color-danger-foreground: #fdf2f8;
-    --color-info: #2e938d;
-    --color-info-foreground: #f0fdf4;
-    --color-muted: #0b201d;
-  }
-
-  /* 5. Antique Parchment (Old Money Ivory Paper & Sapphire) */
-  [data-theme="ivory"] {
+  /* Antique Parchment (Old Money Ivory Paper & Sapphire) */
+  :root {
     --color-background: #f5f2eb;
     --color-surface: #fcfbf9;
     --color-card: #ffffff;
@@ -204,3 +80,16 @@
     @apply bg-background text-text-primary font-sans antialiased;
   }
 }
+
+/* Hide scrollbars globally across all pages and containers while retaining full scroll functionality */
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+

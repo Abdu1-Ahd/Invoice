@@ -15,10 +15,7 @@ export class SettingsRepository {
     const settings = await db.get('settings', DEFAULT_SETTINGS_ID);
     
     if (settings) {
-      return {
-        theme: 'default',
-        ...settings,
-      };
+      return settings;
     }
 
     // Return defaults if none exist
@@ -29,7 +26,6 @@ export class SettingsRepository {
       defaultTaxRate: 0,
       defaultTerms: 'Net 30',
       currency: 'PKR',
-      theme: 'default',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
