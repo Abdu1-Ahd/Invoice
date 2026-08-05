@@ -58,7 +58,7 @@ export const OfflineToast: React.FC = () => {
 
   return (
     <div
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none"
+      className="fixed bottom-28 safe-bottom-floating left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none"
       aria-live="polite"
       aria-atomic="false"
     >

@@ -1,7 +1,7 @@
 import { doc, setDoc, collection, getDocs, writeBatch, query, where } from 'firebase/firestore';
 import { db, auth } from '@/core/firebase/firebase';
 import { SyncQueueItem } from '@/domain/sync';
-import { getDB } from '@/core/storage/db';
+import { db as localDb } from '@/core/storage/db';
 
 export class CloudSyncService {
   /**
@@ -82,7 +82,7 @@ export class CloudSyncService {
 
   /**
    * Pull user documents from Firestore using Timestamp Delta Sync (Technique 1)
-   * and unpack embedded invoice line items (Technique 2).
+   * and unpack embedded invoice line items into Dexie storage (Technique 2).
    */
   static async pullAllUserData(userId: string): Promise<void> {
     const collectionsMap: Record<string, 'invoices' | 'customers' | 'invoiceItems' | 'settings' | 'payments'> = {
@@ -93,7 +93,6 @@ export class CloudSyncService {
       payment: 'payments',
     };
 
-    const localDb = await getDB();
     const lastSyncKey = `ledgerly_last_sync_${userId}`;
     const lastSync = Number(localStorage.getItem(lastSyncKey)) || 0;
     const pullStartTime = Date.now();
@@ -115,22 +114,15 @@ export class CloudSyncService {
               const cleanInvoice = { ...data };
               delete cleanInvoice.items;
 
-              const invoiceTx = localDb.transaction('invoices', 'readwrite');
-              await invoiceTx.objectStore('invoices').put(cleanInvoice);
-              await invoiceTx.done;
-
-              if (items.length > 0) {
-                const itemsTx = localDb.transaction('invoiceItems', 'readwrite');
-                const itemsStore = itemsTx.objectStore('invoiceItems');
-                for (const item of items) {
-                  await itemsStore.put(item);
+              await localDb.transaction('rw', [localDb.invoices, localDb.invoiceItems], async () => {
+                await localDb.invoices.put(cleanInvoice as any);
+                if (items.length > 0) {
+                  await localDb.invoiceItems.bulkPut(items as any);
                 }
-                await itemsTx.done;
-              }
+              });
             } else {
-              const tx = localDb.transaction(storeName, 'readwrite');
-              await tx.objectStore(storeName).put(data);
-              await tx.done;
+              const table = localDb.table(storeName);
+              await table.put(data);
             }
           }
         }
@@ -143,5 +135,4 @@ export class CloudSyncService {
     localStorage.setItem(lastSyncKey, String(pullStartTime));
   }
 }
-
 

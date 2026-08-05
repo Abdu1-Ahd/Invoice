@@ -1,67 +1,37 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import Dexie, { type Table } from 'dexie';
+import { Customer } from '@/domain/customer';
+import { Invoice, InvoiceItem } from '@/domain/invoice';
+import { Payment } from '@/domain/payment';
+import { Settings } from '@/domain/settings';
+import { SyncQueueItem } from '@/domain/sync';
 
-interface InvoiceAppDB extends DBSchema {
-  customers: {
-    key: string;
-    value: any;
-  };
-  invoices: {
-    key: string;
-    value: any;
-    indexes: { 'by-customer': string };
-  };
-  invoiceItems: {
-    key: string;
-    value: any;
-    indexes: { 'by-invoice': string };
-  };
-  payments: {
-    key: string;
-    value: any;
-    indexes: { 'by-invoice': string };
-  };
-  syncQueue: {
-    key: string;
-    value: any;
-  };
-  settings: {
-    key: string;
-    value: any;
-  };
+export interface SyncQueueRecord extends SyncQueueItem {
+  retryCount?: number;
 }
 
-const DB_NAME = 'invoice_db';
-const DB_VERSION = 2;
+export class LedgerlyDB extends Dexie {
+  customers!: Table<Customer, string>;
+  invoices!: Table<Invoice, string>;
+  invoiceItems!: Table<InvoiceItem, string>;
+  payments!: Table<Payment, string>;
+  syncQueue!: Table<SyncQueueRecord, string>;
+  settings!: Table<Settings, string>;
 
-let dbPromise: Promise<IDBPDatabase<InvoiceAppDB>> | null = null;
+  constructor() {
+    super('invoice_db');
 
-export const getDB = () => {
-  if (!dbPromise) {
-    dbPromise = openDB<InvoiceAppDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('customers')) {
-          db.createObjectStore('customers', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('invoices')) {
-          const invoiceStore = db.createObjectStore('invoices', { keyPath: 'id' });
-          invoiceStore.createIndex('by-customer', 'customerId');
-        }
-        if (!db.objectStoreNames.contains('invoiceItems')) {
-          const itemStore = db.createObjectStore('invoiceItems', { keyPath: 'id' });
-          itemStore.createIndex('by-invoice', 'invoiceId');
-        }
-        if (!db.objectStoreNames.contains('payments')) {
-          const paymentStore = db.createObjectStore('payments', { keyPath: 'id' });
-          paymentStore.createIndex('by-invoice', 'invoiceId');
-        }
-        if (!db.objectStoreNames.contains('syncQueue')) {
-          db.createObjectStore('syncQueue', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('settings')) {
-          db.createObjectStore('settings', { keyPath: 'id' });
-        }
-      },
+    // Schema version 3 supersedes earlier idb schemas (version 2),
+    // cleanly declaring object stores and indexed fields for Dexie.
+    this.version(3).stores({
+      customers: 'id, updatedAt, deletedAt',
+      invoices: 'id, customerId, updatedAt, deletedAt',
+      invoiceItems: 'id, invoiceId, updatedAt, deletedAt',
+      payments: 'id, invoiceId, date, deletedAt',
+      syncQueue: 'id, status, createdAt',
+      settings: 'id, updatedAt',
     });
   }
-  return dbPromise;
-};
+}
+
+export const db = new LedgerlyDB();
+export const getDB = async () => db;

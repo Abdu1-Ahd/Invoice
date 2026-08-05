@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { formatCurrency } from '@/core/utils/currency';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
 import { ErrorModal } from '@/shared/components/ErrorModal';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 interface InvoiceDetailsProps {
   onBack: () => void;
@@ -35,8 +36,36 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
 
   if (isLoading || !activeInvoice || !settings) {
     return (
-      <div className="p-8 flex justify-center items-center min-h-[400px]">
-        <Typography variant="body" className="animate-pulse">Loading invoice...</Typography>
+      <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-8">
+        <PageSkeleton loading={true}>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="h-9 w-24 bg-muted rounded-lg" />
+              <div className="flex gap-2">
+                <div className="h-9 w-24 bg-muted rounded-lg" />
+                <div className="h-9 w-28 bg-muted rounded-lg" />
+              </div>
+            </div>
+            <div className="bg-surface rounded-xl border border-border p-8 space-y-8 min-h-[500px]">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <div className="h-8 w-40 bg-muted rounded" />
+                  <div className="h-4 w-56 bg-muted/60 rounded" />
+                </div>
+                <div className="space-y-2 text-right">
+                  <div className="h-6 w-32 bg-muted rounded ml-auto" />
+                  <div className="h-4 w-40 bg-muted/60 rounded ml-auto" />
+                </div>
+              </div>
+              <div className="h-px bg-border my-6" />
+              <div className="space-y-4">
+                <div className="h-10 bg-muted/40 rounded w-full" />
+                <div className="h-12 bg-muted/20 rounded w-full" />
+                <div className="h-12 bg-muted/20 rounded w-full" />
+              </div>
+            </div>
+          </div>
+        </PageSkeleton>
       </div>
     );
   }

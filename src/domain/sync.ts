@@ -6,7 +6,7 @@ export type SyncOperation = z.infer<typeof SyncOperationSchema>;
 export const SyncEntitySchema = z.enum(['customer', 'invoice', 'invoiceItem', 'payment', 'settings']);
 export type SyncEntity = z.infer<typeof SyncEntitySchema>;
 
-export const SyncStatusSchema = z.enum(['PENDING', 'SYNCING', 'ERROR']);
+export const SyncStatusSchema = z.enum(['PENDING', 'SYNCING', 'ERROR', 'FAILED']);
 export type SyncStatus = z.infer<typeof SyncStatusSchema>;
 
 export const SyncQueueItemSchema = z.object({

@@ -14,6 +14,7 @@ import { CurrencySelect } from '@/shared/components/CurrencySelect';
 import { Typography } from '@/shared/components/Typography';
 import { Trash2, Plus, Check } from 'lucide-react';
 import { useKeyboardShortcut } from '@/shared/hooks/useKeyboardShortcut';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 interface InvoiceBuilderProps {
   onSubmit: (data: FullInvoicePayload) => Promise<void>;
@@ -188,6 +189,7 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
 
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-8 pb-16">
+      <PageSkeleton loading={isLoading}>
       {/* Header Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface border border-border rounded-xl shadow-sm">
         <div className="space-y-4">
@@ -503,6 +505,7 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ onSubmit, onCanc
           </Button>
         </div>
       </div>
+      </PageSkeleton>
     </form>
   );
 };

@@ -6,9 +6,10 @@ import { Typography } from '@/shared/components/Typography';
 interface CustomerListProps {
   customers: Customer[];
   onSelect: (customer: Customer) => void;
+  isLoading?: boolean;
 }
 
-export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelect }) => {
+export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelect, isLoading }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [visibleCount, setVisibleCount] = useState(20);
 
@@ -42,6 +43,20 @@ export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelect 
   }, [lastItem?.index, displayedCustomers.length, hasMore, customers.length]);
 
   if (customers.length === 0) {
+    if (isLoading) {
+      return (
+        <div className="max-h-full w-full overflow-y-auto rounded-xl border border-border bg-surface shadow-sm p-2 space-y-2">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="border-b border-border-subtle p-4 sm:p-5 last:border-0">
+              <div className="flex flex-col gap-2">
+                <div className="h-5 w-48 bg-muted rounded" />
+                <div className="h-3 w-64 bg-muted/60 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
     return null;
   }
 

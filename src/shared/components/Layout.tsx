@@ -13,7 +13,7 @@ export const Layout: React.FC = () => {
   useSyncWorker();
 
   return (
-    <div className="flex h-screen h-[100dvh] w-full bg-muted overflow-hidden">
+    <div className="flex h-screen h-[100dvh] w-full bg-muted overflow-hidden safe-top-padding md:pt-0">
       {/* Desktop Sidebar with Sliding Animation */}
       <aside
         className={cn(
@@ -71,12 +71,12 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area with Bottom Padding for Mobile Nav */}
-      <main className="flex-1 overflow-y-auto bg-muted flex flex-col pb-16 md:pb-6">
+      <main className="flex-1 overflow-y-auto bg-muted flex flex-col pb-32 safe-bottom-content md:pb-6">
         <Outlet />
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 z-50 flex w-full border-t border-border bg-surface md:hidden shadow-lg">
+      <nav className="fixed bottom-0 z-50 flex w-full border-t border-border bg-surface md:hidden shadow-lg safe-bottom-nav">
         <MobileNavItem to="/" icon={<Home className="w-5 h-5" />} label="Home" active={location.pathname === '/'} />
         <MobileNavItem to="/invoices" icon={<FileText className="w-5 h-5" />} label="Invoices" active={location.pathname.startsWith('/invoices')} />
         <MobileNavItem to="/customers" icon={<Users className="w-5 h-5" />} label="Customers" active={location.pathname.startsWith('/customers')} />

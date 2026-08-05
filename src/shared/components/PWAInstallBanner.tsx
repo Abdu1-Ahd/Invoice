@@ -39,7 +39,7 @@ export const PWAInstallBanner: React.FC = () => {
           // Desktop: bottom-right corner
           'bottom-6 right-6 max-w-sm px-4 py-3',
           // Mobile: full-width above the bottom nav
-          'max-[768px]:bottom-20 max-[768px]:left-3 max-[768px]:right-3 max-[768px]:max-w-none'
+          'max-[768px]:bottom-28 max-[768px]:left-3 max-[768px]:right-3 max-[768px]:max-w-none safe-bottom-floating'
         )}
         role="dialog"
         aria-label="Install Ledgerly app"

@@ -9,6 +9,7 @@ import { InvoiceDetails } from './InvoiceDetails';
 import { FullInvoicePayload } from '@/domain/invoice';
 import { FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 const InvoiceList = lazy(() => import('./InvoiceList').then(m => ({ default: m.InvoiceList })));
 
@@ -47,11 +48,12 @@ export const InvoicesPage: React.FC = () => {
 
   if (viewState === 'builder') {
     return (
-      <div className="p-8 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
         <Typography variant="h1">Create Invoice</Typography>
         <InvoiceBuilder 
           onSubmit={handleBuilderSubmit}
           onCancel={handleBackToList}
+          isLoading={isLoading}
         />
       </div>
     );
@@ -59,7 +61,7 @@ export const InvoicesPage: React.FC = () => {
 
   if (viewState === 'details') {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <InvoiceDetails onBack={handleBackToList} />
       </div>
     );
@@ -68,7 +70,7 @@ export const InvoicesPage: React.FC = () => {
   // Empty state if NO customers exist (can't create an invoice)
   if (!isLoading && customers.length === 0) {
     return (
-      <div className="p-8 flex flex-col justify-center items-center h-[80vh] text-center space-y-6">
+      <div className="p-4 sm:p-8 flex flex-col justify-center items-center h-[80vh] text-center space-y-6">
         <div className="bg-muted p-6 rounded-full inline-flex">
           <FileText className="w-16 h-16 text-muted-foreground" />
         </div>
@@ -88,7 +90,7 @@ export const InvoicesPage: React.FC = () => {
   // Empty state if no invoices exist
   if (!isLoading && invoices.length === 0) {
     return (
-      <div className="p-8 flex flex-col justify-center items-center h-[80vh] text-center space-y-6">
+      <div className="p-4 sm:p-8 flex flex-col justify-center items-center h-[80vh] text-center space-y-6">
         <div className="bg-muted p-6 rounded-full inline-flex">
           <FileText className="w-16 h-16 text-muted-foreground" />
         </div>
@@ -108,18 +110,20 @@ export const InvoicesPage: React.FC = () => {
   // --- LIST VIEW ---
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-8 pb-0 sm:pb-0 max-w-7xl w-full mx-auto min-h-0">
-      <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
-        <Typography variant="h1">Invoices</Typography>
-        <Button variant="primary" onClick={handleCreateNew}>
-          Create Invoice
-        </Button>
-      </div>
-      
-      <div className="flex-1 min-h-0 flex flex-col pb-1">
-        <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Loading list...</div>}>
-          <InvoiceList invoices={invoices} onSelect={handleSelectInvoice} />
-        </Suspense>
-      </div>
+      <PageSkeleton loading={isLoading} className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
+          <Typography variant="h1">Invoices</Typography>
+          <Button variant="primary" onClick={handleCreateNew} disabled={isLoading}>
+            Create Invoice
+          </Button>
+        </div>
+        
+        <div className="flex-1 min-h-0 flex flex-col pb-1">
+          <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Loading list...</div>}>
+            <InvoiceList invoices={invoices} onSelect={handleSelectInvoice} isLoading={isLoading} />
+          </Suspense>
+        </div>
+      </PageSkeleton>
     </div>
   );
 };

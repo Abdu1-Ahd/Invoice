@@ -6,11 +6,14 @@ import { Typography } from '@/shared/components/Typography';
 import { AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatCurrency, getCurrencySymbol } from '@/core/utils/currency';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 export const ReportsPage: React.FC = () => {
-  const { invoices, loadInvoices } = useInvoiceStore();
-  const { customers, loadCustomers } = useCustomerStore();
-  const { settings, loadSettings } = useSettingsStore();
+  const { invoices, loadInvoices, isLoading: invoicesLoading } = useInvoiceStore();
+  const { customers, loadCustomers, isLoading: customersLoading } = useCustomerStore();
+  const { settings, loadSettings, isLoading: settingsLoading } = useSettingsStore();
+
+  const isPageLoading = invoicesLoading || customersLoading || settingsLoading;
 
   useEffect(() => {
     loadInvoices();
@@ -59,8 +62,9 @@ export const ReportsPage: React.FC = () => {
   );
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-      <Typography variant="h1">Reports & Overview</Typography>
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      <PageSkeleton loading={isPageLoading} className="space-y-6 sm:space-y-8">
+        <Typography variant="h1">Reports & Overview</Typography>
 
       {/* Responsive Cards Grid: 1 on mobile, 2 on tablet, 4 on desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -96,7 +100,23 @@ export const ReportsPage: React.FC = () => {
             Recent Activity
           </Typography>
           <div className="space-y-4">
-            {invoices.length === 0 ? (
+            {isPageLoading && invoices.length === 0 ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="space-y-1">
+                    <div className="h-4 w-32 bg-muted rounded" />
+                    <div className="h-3 w-44 bg-muted/60 rounded" />
+                  </div>
+                  <div className="text-right space-y-1">
+                    <div className="h-4 w-20 bg-muted rounded ml-auto" />
+                    <div className="h-3 w-14 bg-muted/60 rounded ml-auto" />
+                  </div>
+                </div>
+              ))
+            ) : invoices.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-6">No invoices created yet.</p>
             ) : (
               invoices.slice(0, 5).map((inv) => {
@@ -135,6 +155,7 @@ export const ReportsPage: React.FC = () => {
           </Typography>
         </div>
       </div>
+      </PageSkeleton>
     </div>
   );
 };

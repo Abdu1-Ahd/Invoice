@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDB } from './db';
+import { db } from './db';
 import { Settings, SettingsPayload } from '@/domain/settings';
 import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
@@ -11,8 +11,7 @@ export class SettingsRepository {
    * Fetch settings. If they don't exist, return defaults.
    */
   static async get(): Promise<Settings> {
-    const db = await getDB();
-    const settings = await db.get('settings', DEFAULT_SETTINGS_ID);
+    const settings = await db.settings.get(DEFAULT_SETTINGS_ID);
     
     if (settings) {
       return settings;
@@ -35,7 +34,6 @@ export class SettingsRepository {
    * Update settings
    */
   static async update(payload: SettingsPayload): Promise<Settings> {
-    const db = await getDB();
     const existing = await this.get();
     
     const now = Date.now();
@@ -45,22 +43,21 @@ export class SettingsRepository {
       updatedAt: now,
     };
 
-    const tx = db.transaction(['settings', 'syncQueue'], 'readwrite');
-    await tx.objectStore('settings').put(updated);
-    
-    await tx.objectStore('syncQueue').add({
-      id: uuidv4(),
-      entityType: 'settings',
-      entityId: DEFAULT_SETTINGS_ID,
-      operation: 'UPDATE',
-      payload: updated,
-      status: 'PENDING',
-      createdAt: now,
+    await db.transaction('rw', [db.settings, db.syncQueue], async () => {
+      await db.settings.put(updated);
+      
+      await db.syncQueue.put({
+        id: uuidv4(),
+        entityType: 'settings',
+        entityId: DEFAULT_SETTINGS_ID,
+        operation: 'UPDATE',
+        payload: updated,
+        status: 'PENDING',
+        createdAt: now,
+      });
     });
 
-    await tx.done;
     triggerInstantSync();
     return updated;
   }
 }
-

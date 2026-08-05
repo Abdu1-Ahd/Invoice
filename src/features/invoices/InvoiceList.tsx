@@ -10,9 +10,10 @@ import { cn } from '@/shared/utils/cn';
 interface InvoiceListProps {
   invoices: Invoice[];
   onSelect: (id: string) => void;
+  isLoading?: boolean;
 }
 
-export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect }) => {
+export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect, isLoading }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const { customers } = useCustomerStore();
   const { settings, loadSettings } = useSettingsStore();
@@ -56,6 +57,24 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect }) 
   }, [lastItem?.index, displayedInvoices.length, hasMore, invoices.length]);
 
   if (invoices.length === 0) {
+    if (isLoading) {
+      return (
+        <div className="max-h-full w-full overflow-y-auto rounded-xl border border-border bg-surface shadow-sm p-2 space-y-2">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="flex justify-between items-center border-b border-border-subtle p-4 sm:p-5 last:border-0">
+              <div className="flex flex-col gap-2">
+                <div className="h-5 w-32 bg-muted rounded" />
+                <div className="h-3 w-48 bg-muted/60 rounded" />
+              </div>
+              <div className="text-right flex flex-col items-end gap-2">
+                <div className="h-5 w-24 bg-muted rounded" />
+                <div className="h-5 w-16 bg-muted rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
     return null;
   }
 

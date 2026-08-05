@@ -7,12 +7,15 @@ import { Clock, AlertCircle, CheckCircle, FileText, Users } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatCurrency, getCurrencySymbol, fetchExchangeRates, convertCurrencyAmount, ExchangeRates } from '@/core/utils/currency';
 import { Link } from 'react-router-dom';
+import { PageSkeleton } from '@/shared/components/PageSkeleton';
 
 export const DashboardPage: React.FC = () => {
-  const { invoices, loadInvoices } = useInvoiceStore();
-  const { customers, loadCustomers } = useCustomerStore();
-  const { settings, loadSettings } = useSettingsStore();
+  const { invoices, loadInvoices, isLoading: invoicesLoading } = useInvoiceStore();
+  const { customers, loadCustomers, isLoading: customersLoading } = useCustomerStore();
+  const { settings, loadSettings, isLoading: settingsLoading } = useSettingsStore();
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
+
+  const isPageLoading = invoicesLoading || customersLoading || settingsLoading;
 
   useEffect(() => {
     loadInvoices();
@@ -79,8 +82,9 @@ export const DashboardPage: React.FC = () => {
   );
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="w-full p-4 sm:p-8 max-w-7xl mx-auto">
+      <PageSkeleton loading={isPageLoading} className="space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Typography variant="h1">Dashboard</Typography>
           {/* <Typography variant="body" className="text-text-muted mt-1">
@@ -172,7 +176,25 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="space-y-3">
-            {invoices.length === 0 ? (
+            {isPageLoading && invoices.length === 0 ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center border-b border-border pb-3 last:border-0 last:pb-0 gap-2"
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="h-4 w-28 bg-muted rounded" />
+                    <div className="h-3 w-40 bg-muted/60 rounded" />
+                  </div>
+                  <div className="text-right flex-shrink-0 space-y-1">
+                    <div className="h-4 w-20 bg-muted rounded inline-block" />
+                    <div>
+                      <span className="inline-block h-5 w-14 rounded bg-muted" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : invoices.length === 0 ? (
               <p className="text-text-muted text-sm text-center py-8">
                 No invoices created yet. Click "Create Invoice" above to get started.
               </p>
@@ -207,6 +229,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+      </PageSkeleton>
     </div>
   );
 };

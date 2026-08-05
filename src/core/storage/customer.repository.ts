@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDB } from './db';
+import { db } from './db';
 import { Customer, CustomerPayload } from '@/domain/customer';
 import { triggerInstantSync } from '@/features/sync/utils/syncTrigger';
 
@@ -8,8 +8,7 @@ export class CustomerRepository {
    * Fetch all active customers.
    */
   static async findAll(): Promise<Customer[]> {
-    const db = await getDB();
-    const all = await db.getAll('customers');
+    const all = await db.customers.toArray();
     return all.filter((c: Customer) => c.deletedAt === null).sort((a, b) => b.updatedAt - a.updatedAt);
   }
 
@@ -17,8 +16,7 @@ export class CustomerRepository {
    * Fetch a single customer by ID.
    */
   static async findById(id: string): Promise<Customer | undefined> {
-    const db = await getDB();
-    const customer = await db.get('customers', id);
+    const customer = await db.customers.get(id);
     if (customer && customer.deletedAt === null) {
       return customer;
     }
@@ -29,7 +27,6 @@ export class CustomerRepository {
    * Create a new customer.
    */
   static async create(payload: CustomerPayload): Promise<Customer> {
-    const db = await getDB();
     const now = Date.now();
     const newCustomer: Customer = {
       ...payload,
@@ -39,21 +36,21 @@ export class CustomerRepository {
       deletedAt: null,
     };
 
-    const tx = db.transaction(['customers', 'syncQueue'], 'readwrite');
-    await tx.objectStore('customers').add(newCustomer);
-    
-    // Add to sync queue
-    await tx.objectStore('syncQueue').add({
-      id: uuidv4(),
-      entityType: 'customer',
-      entityId: newCustomer.id,
-      operation: 'CREATE',
-      payload: newCustomer,
-      status: 'PENDING',
-      createdAt: now,
+    await db.transaction('rw', [db.customers, db.syncQueue], async () => {
+      await db.customers.put(newCustomer);
+      
+      // Add to sync queue
+      await db.syncQueue.put({
+        id: uuidv4(),
+        entityType: 'customer',
+        entityId: newCustomer.id,
+        operation: 'CREATE',
+        payload: newCustomer,
+        status: 'PENDING',
+        createdAt: now,
+      });
     });
 
-    await tx.done;
     triggerInstantSync();
     return newCustomer;
   }
@@ -62,8 +59,7 @@ export class CustomerRepository {
    * Update an existing customer.
    */
   static async update(id: string, payload: Partial<CustomerPayload>): Promise<Customer> {
-    const db = await getDB();
-    const existing = await db.get('customers', id);
+    const existing = await db.customers.get(id);
     if (!existing || existing.deletedAt !== null) {
       throw new Error('Customer not found');
     }
@@ -75,21 +71,21 @@ export class CustomerRepository {
       updatedAt: now,
     };
 
-    const tx = db.transaction(['customers', 'syncQueue'], 'readwrite');
-    await tx.objectStore('customers').put(updatedCustomer);
+    await db.transaction('rw', [db.customers, db.syncQueue], async () => {
+      await db.customers.put(updatedCustomer);
 
-    // Add to sync queue
-    await tx.objectStore('syncQueue').add({
-      id: uuidv4(),
-      entityType: 'customer',
-      entityId: updatedCustomer.id,
-      operation: 'UPDATE',
-      payload: updatedCustomer,
-      status: 'PENDING',
-      createdAt: now,
+      // Add to sync queue
+      await db.syncQueue.put({
+        id: uuidv4(),
+        entityType: 'customer',
+        entityId: updatedCustomer.id,
+        operation: 'UPDATE',
+        payload: updatedCustomer,
+        status: 'PENDING',
+        createdAt: now,
+      });
     });
 
-    await tx.done;
     triggerInstantSync();
     return updatedCustomer;
   }
@@ -98,8 +94,7 @@ export class CustomerRepository {
    * Soft delete a customer.
    */
   static async delete(id: string): Promise<void> {
-    const db = await getDB();
-    const existing = await db.get('customers', id);
+    const existing = await db.customers.get(id);
     if (!existing || existing.deletedAt !== null) return;
 
     const now = Date.now();
@@ -109,22 +104,21 @@ export class CustomerRepository {
       updatedAt: now,
     };
 
-    const tx = db.transaction(['customers', 'syncQueue'], 'readwrite');
-    await tx.objectStore('customers').put(updatedCustomer);
+    await db.transaction('rw', [db.customers, db.syncQueue], async () => {
+      await db.customers.put(updatedCustomer);
 
-    // Add to sync queue
-    await tx.objectStore('syncQueue').add({
-      id: uuidv4(),
-      entityType: 'customer',
-      entityId: updatedCustomer.id,
-      operation: 'DELETE',
-      payload: { deletedAt: now, updatedAt: now },
-      status: 'PENDING',
-      createdAt: now,
+      // Add to sync queue
+      await db.syncQueue.put({
+        id: uuidv4(),
+        entityType: 'customer',
+        entityId: updatedCustomer.id,
+        operation: 'DELETE',
+        payload: { deletedAt: now, updatedAt: now },
+        status: 'PENDING',
+        createdAt: now,
+      });
     });
 
-    await tx.done;
     triggerInstantSync();
   }
 }
-
