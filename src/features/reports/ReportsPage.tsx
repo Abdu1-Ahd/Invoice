@@ -63,32 +63,32 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      <Typography variant="h1" className="mb-6 sm:mb-8">Reports & Overview</Typography>
       <PageSkeleton loading={isPageLoading} className="space-y-6 sm:space-y-8">
-        <Typography variant="h1">Reports & Overview</Typography>
 
       {/* Responsive Cards Grid: 1 on mobile, 2 on tablet, 4 on desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <MetricCard
           title="Total Revenue"
-          value={metrics.totalRevenue}
+          value={isPageLoading ? 25000 : metrics.totalRevenue}
           customIcon={getCurrencySymbol(currencyCode)}
           colorClass="bg-success/15 text-success"
         />
         <MetricCard
           title="Outstanding"
-          value={metrics.outstanding}
+          value={isPageLoading ? 5000 : metrics.outstanding}
           icon={Clock}
           colorClass="bg-info/15 text-info"
         />
         <MetricCard
           title="Overdue"
-          value={metrics.overdue}
+          value={isPageLoading ? 2000 : metrics.overdue}
           icon={AlertCircle}
           colorClass="bg-danger/15 text-danger"
         />
         <MetricCard
           title="In Drafts"
-          value={metrics.draft}
+          value={isPageLoading ? 1500 : metrics.draft}
           icon={CheckCircle}
           colorClass="bg-muted text-text-muted"
         />
@@ -102,17 +102,22 @@ export const ReportsPage: React.FC = () => {
           <div className="space-y-4">
             {isPageLoading && invoices.length === 0 ? (
               Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="space-y-1">
-                    <div className="h-4 w-32 bg-muted rounded" />
-                    <div className="h-3 w-44 bg-muted/60 rounded" />
+                <div key={index} className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0">
+                  <div>
+                    <Typography variant="body" className="font-medium text-text-primary">
+                      INV-0000
+                    </Typography>
+                    <Typography variant="caption" className="text-text-muted">
+                      Loading Customer
+                    </Typography>
                   </div>
-                  <div className="text-right space-y-1">
-                    <div className="h-4 w-20 bg-muted rounded ml-auto" />
-                    <div className="h-3 w-14 bg-muted/60 rounded ml-auto" />
+                  <div className="text-right">
+                    <Typography variant="body" className="font-bold text-text-primary">
+                      $0,000.00
+                    </Typography>
+                    <Typography variant="caption" className="text-text-muted">
+                      Draft
+                    </Typography>
                   </div>
                 </div>
               ))

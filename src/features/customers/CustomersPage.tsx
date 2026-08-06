@@ -54,17 +54,15 @@ export const CustomersPage: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <Typography variant="h1">{editingCustomer ? 'Edit Customer' : 'New Customer'}</Typography>
         </div>
-        <PageSkeleton loading={isLoading}>
-          <div className="bg-surface p-6 rounded-xl shadow-sm border border-border-subtle">
-            <CustomerEditor
-              key={editingCustomer?.id || 'new'}
-              initialData={editingCustomer}
-              onSubmit={handleSubmit}
-              onCancel={() => setIsEditorOpen(false)}
-              isLoading={isLoading}
-            />
-          </div>
-        </PageSkeleton>
+        <div className="bg-surface p-6 rounded-xl shadow-sm border border-border-subtle">
+          <CustomerEditor
+            key={editingCustomer?.id || 'new'}
+            initialData={editingCustomer}
+            onSubmit={handleSubmit}
+            onCancel={() => setIsEditorOpen(false)}
+            isLoading={isLoading}
+          />
+        </div>
         
         {editingCustomer && (
           <div className="mt-8 pt-8 border-t border-border-subtle flex justify-end">
@@ -111,19 +109,17 @@ export const CustomersPage: React.FC = () => {
   // --- LIST VIEW ---
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-8 pb-0 sm:pb-0 max-w-7xl w-full mx-auto min-h-0">
-      <PageSkeleton loading={isLoading} className="flex-1 min-h-0 flex flex-col">
-        <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
-          <Typography variant="h1">Customers</Typography>
-          <Button variant="primary" onClick={handleCreateNew} disabled={isLoading}>
-            Add Customer
-          </Button>
-        </div>
-        
-        <div className="flex-1 min-h-0 flex flex-col pb-1">
-          <Suspense fallback={<div className="p-8 text-center text-text-muted text-sm">Loading list...</div>}>
-            <CustomerList customers={customers} onSelect={handleEdit} isLoading={isLoading} />
-          </Suspense>
-        </div>
+      <div className="flex-shrink-0 flex justify-between items-center pb-4 sm:pb-6 sticky top-0 z-10 bg-muted">
+        <Typography variant="h1">Customers</Typography>
+        <Button variant="primary" onClick={handleCreateNew} disabled={isLoading}>
+          Add Customer
+        </Button>
+      </div>
+      
+      <PageSkeleton loading={isLoading} className="flex-1 min-h-0 flex flex-col pb-1">
+        <Suspense fallback={null}>
+          <CustomerList customers={customers} onSelect={handleEdit} isLoading={isLoading} />
+        </Suspense>
       </PageSkeleton>
     </div>
   );

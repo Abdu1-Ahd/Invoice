@@ -5,7 +5,7 @@ import { Typography } from '@/shared/components/Typography';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { formatCurrency } from '@/core/utils/currency';
-import { cn } from '@/shared/utils/cn';
+import { StatusBadge } from '@/shared/components/StatusBadge';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -61,14 +61,20 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect, is
       return (
         <div className="max-h-full w-full overflow-y-auto rounded-xl border border-border bg-surface shadow-sm p-2 space-y-2">
           {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="flex justify-between items-center border-b border-border-subtle p-4 sm:p-5 last:border-0">
-              <div className="flex flex-col gap-2">
-                <div className="h-5 w-32 bg-muted rounded" />
-                <div className="h-3 w-48 bg-muted/60 rounded" />
+            <div key={idx} className="border-b border-border-subtle p-4 sm:p-5 last:border-0 hover:bg-muted/60 transition-colors flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4">
+              <div className="flex flex-col gap-1 min-w-0">
+                <Typography variant="body" className="font-semibold text-foreground flex flex-wrap items-center gap-2">
+                  <span className="truncate">INV-0000</span>
+                  <StatusBadge status="Draft" />
+                </Typography>
+                <Typography variant="caption" className="text-muted-foreground text-xs">
+                  Loading Customer • Due 01/01/2026
+                </Typography>
               </div>
-              <div className="text-right flex flex-col items-end gap-2">
-                <div className="h-5 w-24 bg-muted rounded" />
-                <div className="h-5 w-16 bg-muted rounded-full" />
+              <div className="flex flex-col sm:items-end gap-1 flex-shrink-0">
+                <Typography variant="body" className="font-bold text-foreground">
+                  $0,000.00
+                </Typography>
               </div>
             </div>
           ))}
@@ -77,13 +83,6 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect, is
     }
     return null;
   }
-
-  const statusColors: Record<string, string> = {
-    Draft: 'bg-muted text-muted-foreground',
-    Sent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    Paid: 'bg-success/20 text-success-foreground',
-    Overdue: 'bg-danger/20 text-danger-foreground'
-  };
 
   return (
     <div
@@ -129,9 +128,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect, is
               <div className="flex flex-col gap-1 min-w-0">
                 <Typography variant="body" className="font-semibold text-foreground flex flex-wrap items-center gap-2">
                   <span className="truncate">{invoice.invoiceNumber}</span>
-                  <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex-shrink-0", statusColors[invoice.status] || 'bg-muted text-muted-foreground')}>
-                    {invoice.status}
-                  </span>
+                  <StatusBadge status={invoice.status} />
                 </Typography>
                 <Typography variant="caption" className="text-muted-foreground text-xs">
                   {getCustomerName(invoice.customerId)} • Due {new Date(invoice.dueDate).toLocaleDateString()}

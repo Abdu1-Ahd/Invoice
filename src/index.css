@@ -109,4 +109,8 @@
   }
 }
 
-
+@keyframes p3DrawWave {
+  0% { stroke-dashoffset: 1200; }
+  50% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1200; }
+}

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/core/utils/currency';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
 import { ErrorModal } from '@/shared/components/ErrorModal';
 import { PageSkeleton } from '@/shared/components/PageSkeleton';
+import { StatusBadge } from '@/shared/components/StatusBadge';
 
 interface InvoiceDetailsProps {
   onBack: () => void;
@@ -39,29 +40,50 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
       <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-8">
         <PageSkeleton loading={true}>
           <div className="space-y-6">
+            {/* Toolbar row — mirrors real Back button + action buttons */}
             <div className="flex items-center justify-between">
-              <div className="h-9 w-24 bg-muted rounded-lg" />
+              <Button variant="secondary" onClick={onBack}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              </Button>
               <div className="flex gap-2">
-                <div className="h-9 w-24 bg-muted rounded-lg" />
-                <div className="h-9 w-28 bg-muted rounded-lg" />
+                <Button variant="secondary" disabled>
+                  <FileDown className="w-4 h-4 mr-2" /> Download PDF
+                </Button>
+                <Button variant="primary" disabled>
+                  <Send className="w-4 h-4 mr-2" /> Mark as Sent
+                </Button>
               </div>
             </div>
+            {/* Invoice card body — mirrors the StandardTemplate card dimensions */}
             <div className="bg-surface rounded-xl border border-border p-8 space-y-8 min-h-[500px]">
               <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="h-8 w-40 bg-muted rounded" />
-                  <div className="h-4 w-56 bg-muted/60 rounded" />
+                <div className="space-y-1">
+                  <Typography variant="h2">Loading Agency Name</Typography>
+                  <Typography variant="caption" className="text-text-muted block">Loading Customer Name</Typography>
+                  <Typography variant="caption" className="text-text-muted block">123 Loading Street, City</Typography>
                 </div>
-                <div className="space-y-2 text-right">
-                  <div className="h-6 w-32 bg-muted rounded ml-auto" />
-                  <div className="h-4 w-40 bg-muted/60 rounded ml-auto" />
+                <div className="text-right space-y-1">
+                  <Typography variant="h3">INVOICE</Typography>
+                  <Typography variant="caption" className="text-text-muted block">#INV-0000</Typography>
+                  <Typography variant="caption" className="text-text-muted block">Due: 01/01/2026</Typography>
                 </div>
               </div>
-              <div className="h-px bg-border my-6" />
-              <div className="space-y-4">
-                <div className="h-10 bg-muted/40 rounded w-full" />
-                <div className="h-12 bg-muted/20 rounded w-full" />
-                <div className="h-12 bg-muted/20 rounded w-full" />
+              <div className="h-px bg-border" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-4">
+                  <Typography variant="caption" className="font-bold text-text-muted uppercase">Description</Typography>
+                  <Typography variant="caption" className="font-bold text-text-muted uppercase text-right">Qty</Typography>
+                  <Typography variant="caption" className="font-bold text-text-muted uppercase text-right">Rate</Typography>
+                  <Typography variant="caption" className="font-bold text-text-muted uppercase text-right">Amount</Typography>
+                </div>
+                {[1, 2].map(i => (
+                  <div key={i} className="grid grid-cols-4 gap-4 border-t border-border pt-3">
+                    <Typography variant="body">Loading Service Item {i}</Typography>
+                    <Typography variant="body" className="text-right">1</Typography>
+                    <Typography variant="body" className="text-right">$0,000.00</Typography>
+                    <Typography variant="body" className="text-right">$0,000.00</Typography>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -188,9 +210,12 @@ export const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({ onBack }) => {
       <div className="bg-surface p-6 sm:p-12 rounded-xl shadow-sm border border-border space-y-8 sm:space-y-12">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <Typography variant="h1" className="text-3xl sm:text-4xl">
-              INVOICE
-            </Typography>
+            <div className="flex items-center gap-3">
+              <Typography variant="h1" className="text-3xl sm:text-4xl">
+                INVOICE
+              </Typography>
+              <StatusBadge status={invoice.status} className="text-xs px-3 py-1" />
+            </div>
             <Typography variant="body" className="text-text-muted mt-1">
               {invoice.invoiceNumber}
             </Typography>

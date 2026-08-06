@@ -93,8 +93,8 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-8 max-w-2xl mx-auto">
-      <PageSkeleton loading={isLoading && !settings} className="space-y-6">
-        <Typography variant="h1">Settings</Typography>
+      <Typography variant="h1" className="mb-6">Settings</Typography>
+      <PageSkeleton loading={isLoading && !settings} className="flex flex-col gap-6">
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-sm">
 
@@ -106,8 +106,8 @@ export const SettingsPage: React.FC = () => {
             <Input placeholder="Acme Studio" {...register('agencyName')} error={errors.agencyName?.message} />
           </div>
 
-          <div className="space-y-2">
-            <Label>Logo</Label>
+          <div className="space-y-3">
+            <Label className="text-base font-semibold text-text-primary">Logo</Label>
             <input
               type="file"
               accept="image/png, image/jpeg, image/svg+xml"
@@ -115,52 +115,59 @@ export const SettingsPage: React.FC = () => {
               ref={fileInputRef}
               onChange={handleFileChange}
             />
-            {logoBase64 ? (
-              <div className="space-y-3">
-                <div className="border border-border rounded-lg p-4 bg-surface flex items-center justify-center w-full">
-                  <img src={logoBase64} alt="Logo Preview" className="h-24 object-contain max-w-full" />
+
+            {/* Logo Preview / Upload Container Box */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-40 sm:h-44 border border-border rounded-xl bg-card flex items-center justify-center p-4 cursor-pointer hover:border-primary/50 transition-colors shadow-xs group relative overflow-hidden"
+            >
+              {logoBase64 ? (
+                <img
+                  src={logoBase64}
+                  alt="Logo Preview"
+                  className="max-h-28 sm:max-h-32 max-w-[85%] object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-text-muted">
+                  <Upload className="w-8 h-8 mb-2 group-hover:text-primary transition-colors opacity-70" />
+                  <span className="text-sm font-medium group-hover:text-text-primary transition-colors">
+                    Click to upload logo
+                  </span>
                 </div>
-                <div className="flex items-center justify-center gap-3">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Change Logo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setValue('logoBase64', '', { shouldDirty: true })}
-                    className="flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                role="button"
-                tabIndex={0}
+              )}
+            </div>
+
+            {/* Action Buttons Centered Below Box */}
+            <div className="flex items-center justify-center gap-3 pt-1 pb-1">
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
                 onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-text-muted w-full bg-muted/30 hover:bg-muted/70 hover:border-primary/60 cursor-pointer transition-all duration-200 group"
+                className="bg-secondary hover:bg-secondary/80 text-text-primary border-0 font-medium px-5 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-all active:scale-95"
               >
-                <Upload className="w-6 h-6 mb-2 text-text-muted group-hover:text-primary transition-colors" />
-                <span className="text-sm font-medium group-hover:text-text-primary transition-colors">Click to upload logo</span>
-              </div>
-            )}
-            <p className="text-xs text-text-muted">Max size 2MB. Recommended format: PNG with transparent background.</p>
+                <Upload className="w-4 h-4 text-text-primary" />
+                {logoBase64 ? 'Change Logo' : 'Upload Logo'}
+              </Button>
+
+              {logoBase64 && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="md"
+                  onClick={() => setValue('logoBase64', '', { shouldDirty: true })}
+                  className="bg-danger hover:bg-danger/90 text-white border-0 font-medium px-5 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <X className="w-4 h-4 text-white" />
+                  Remove
+                </Button>
+              )}
+            </div>
+
+            {/* Subtext */}
+            <p className="text-xs sm:text-sm text-text-muted pt-1">
+              Max size 2MB. Recommended format: PNG with transparent background.
+            </p>
           </div>
         </div>
 
