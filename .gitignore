@@ -1,5 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+
+# Build and Output Directories
+dist/
+dist-ssr/
+dev-dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment & Private/Secret Files
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+credentials.json
+firebase-key.json
+secrets.json
+service-account*.json
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,21 +39,56 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-.obsidian
-.skills
+# Caches & Temporary Files
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.vite/
+.turbo/
+*.tmp
+*.temp
+*.swp
+*.bak
+*~
 
-# Editor directories and files
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor & IDE Directories/Files
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+.obsidian/
+.skills/
+.gemini/
+.agents/
+.claude/
+.cursor/
+.fleet/
+.history/
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+blob-report/
+test-results/
+
+# Future Tauri Desktop Build Output
+src-tauri/target/
+
