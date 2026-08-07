@@ -2,6 +2,8 @@ import React from 'react';
 import { Typography } from './Typography';
 import { Button } from './Button';
 import { AlertCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { modalVariants, backdropVariants } from '@/shared/config/animations';
 
 interface ErrorModalProps {
   isOpen: boolean;
@@ -16,21 +18,32 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
   message,
   onClose,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div 
-        className="bg-surface border border-border rounded-2xl p-6 sm:p-7 shadow-2xl max-w-md w-full relative space-y-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-text-muted hover:text-text-primary p-1 rounded-lg transition-colors"
-          aria-label="Close modal"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
         >
-          <X className="w-5 h-5" />
-        </button>
+          <motion.div 
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="bg-surface border border-border rounded-2xl p-6 sm:p-7 shadow-2xl max-w-md w-full relative space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.button
+              whileHover={{ rotate: 90 }}
+              onClick={onClose}
+              className="absolute top-4 right-4 text-text-muted hover:text-text-primary p-1 rounded-lg transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </motion.button>
 
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-full bg-danger/15 text-danger flex-shrink-0">
@@ -51,7 +64,9 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
             Understand & Close
           </Button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

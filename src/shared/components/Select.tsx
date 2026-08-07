@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '@/shared/utils/cn';
+import { motion, AnimatePresence } from 'framer-motion';
+import { errorSlideDown } from '@/shared/config/animations';
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
@@ -24,9 +26,19 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-        {error && (
-          <p className="mt-1 text-sm text-danger">{error}</p>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.p 
+              variants={errorSlideDown}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="mt-1 text-sm text-danger overflow-hidden"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

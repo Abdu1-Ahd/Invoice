@@ -1,78 +1,105 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface SplashScreenProps {
-  /** Optional minimum display duration in milliseconds (defaults to 1800ms) */
+  /** Target progress of the real app loading (0-100) */
+  targetProgress?: number;
+  /** Current status text of the real app loading */
+  statusText?: string;
+  /** Optional minimum display duration in milliseconds (defaults to 2000ms) */
   minDuration?: number;
   /** Optional callback fired when splash exit animation completes */
   onComplete?: () => void;
+  /** Optional callback fired when splash exit animation begins */
+  onExitStart?: () => void;
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
-  minDuration = 1800,
+  targetProgress = 100,
+  statusText = 'INITIALIZING WORKSPACE...',
+  minDuration = 2000,
   onComplete,
+  onExitStart,
 }) => {
-  const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState('INITIALIZING WORKSPACE...');
+  const [visualProgress, setVisualProgress] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const startTimeRef = useRef(performance.now());
 
   useEffect(() => {
-    const stages = [
-      'INITIALIZING WORKSPACE...',
-      'LOADING INDEXEDDB VAULT...',
-      'SYNCHRONIZING RECENT INVOICES...',
-      'LAUNCHING DASHBOARD...',
-    ];
-
-    const stepTime = minDuration / 25;
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = Math.min(prev + Math.floor(Math.random() * 9) + 4, 100);
-        const idx = Math.min(Math.floor((next / 100) * stages.length), stages.length - 1);
-        setStatusText(stages[idx]);
+      const elapsedTime = performance.now() - startTimeRef.current;
+      
+      setVisualProgress((prev) => {
+        let newProg = prev;
+        const timeProgress = (elapsedTime / minDuration) * 100;
 
-        if (next >= 100) {
+        if (targetProgress === 100) {
+          if (timeProgress >= 100) {
+            // Min duration elapsed, and app is ready. Ease to 100 quickly to prevent jumps.
+            newProg += (100 - prev) * 0.15;
+            if (newProg > 99.5) newProg = 100;
+          } else {
+            // Min duration not elapsed. Follow time curve.
+            newProg = timeProgress;
+          }
+        } else {
+          // App still loading
+          if (prev < targetProgress) {
+             // Ease towards target smoothly, but don't exceed time curve
+             newProg += (targetProgress - prev) * 0.1;
+             newProg = Math.min(newProg, timeProgress);
+          } else {
+             // Stalled at target progress. Creep slowly to maintain motion.
+             newProg += 0.08;
+          }
+          newProg = Math.min(newProg, 99); // Hard cap at 99 until targetProgress is 100
+        }
+        
+        newProg = Math.max(prev, newProg); // Ensure we don't go backwards
+        
+        if (newProg >= 100 && prev < 100) {
           clearInterval(interval);
           // Stage 1 of exit: Trigger cinematic leaving animation
           setTimeout(() => {
+            if (onExitStart) onExitStart();
             setIsLeaving(true);
-            // Stage 2 of exit: Unmount component after leaving transition (800ms)
+            // Stage 2 of exit: Unmount component after leaving transition (1500ms for smooth exit)
             setTimeout(() => {
               setIsHidden(true);
               if (onComplete) onComplete();
-            }, 800);
-          }, 200);
+            }, 1500);
+          }, 300);
         }
-        return next;
+        return newProg;
       });
-    }, stepTime);
+    }, 16);
 
     return () => clearInterval(interval);
-  }, [minDuration, onComplete]);
+  }, [targetProgress, minDuration, onComplete, onExitStart]);
 
   if (isHidden) return null;
 
   // SVG circumference dashoffset for r=75 -> 2 * PI * 75 ≈ 471.24
   const circumference = 471.24;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const strokeDashoffset = circumference - (visualProgress / 100) * circumference;
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-all duration-800 cubic-bezier(0.16, 1, 0.3, 1) ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) ${
         isLeaving
-          ? 'opacity-0 scale-110 backdrop-blur-xl pointer-events-none'
+          ? 'opacity-0 scale-110 backdrop-blur-2xl pointer-events-none'
           : 'opacity-100 scale-100 backdrop-blur-none'
       }`}
       style={{ background: 'var(--color-surface, #fcfbf9)' }}
       aria-label="Loading app"
       role="progressbar"
-      aria-valuenow={progress}
+      aria-valuenow={Math.round(visualProgress)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       {/* Blueprint Grid Lines Backdrop */}
       <div
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${
           isLeaving ? 'opacity-0' : 'opacity-30'
         }`}
         style={{
@@ -86,7 +113,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Financial Sine Wave Overlay */}
       <div
-        className={`absolute inset-0 pointer-events-none z-2 flex items-center justify-center transition-all duration-700 ${
+        className={`absolute inset-0 pointer-events-none z-2 flex items-center justify-center transition-all duration-1000 ${
           isLeaving ? 'opacity-0 scale-125' : 'opacity-25 scale-100'
         }`}
       >
@@ -100,6 +127,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             style={{
               strokeDasharray: 1200,
               strokeDashoffset: 0,
+              // Sine wave slows down if targetProgress is low (waiting for actual load)
+              animationDuration: targetProgress < 100 ? `${10 - (targetProgress / 100) * 7}s` : '3s',
             }}
           />
         </svg>
@@ -107,25 +136,25 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Explosive Gold/Teal Radial Aura on Leaving */}
       <div
-        className={`absolute w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-800 ease-out ${
+        className={`absolute w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ease-out ${
           isLeaving
-            ? 'scale-[2.5] opacity-0 bg-radial from-accent/40 via-gold/30 to-transparent'
+            ? 'scale-[3] opacity-0 bg-radial from-accent/40 via-gold/30 to-transparent'
             : 'scale-90 opacity-40 bg-radial from-accent/20 via-transparent to-transparent'
         }`}
       />
 
       {/* Content Center Container */}
       <div
-        className={`relative z-10 flex flex-col items-center text-center px-4 transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) ${
-          isLeaving ? 'scale-125 opacity-0 -translate-y-4' : 'scale-100 opacity-100 translate-y-0'
+        className={`relative z-10 flex flex-col items-center text-center px-4 transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) ${
+          isLeaving ? 'scale-125 opacity-0 -translate-y-6' : 'scale-100 opacity-100 translate-y-0'
         }`}
       >
         {/* Circular Logo Wrapper & Edge Progress Ring */}
         <div className="relative w-36 h-36 sm:w-40 sm:h-40 mb-8 flex items-center justify-center">
           {/* Edge Circular SVG Progress Ring */}
           <svg
-            className={`absolute inset-0 w-full h-full -rotate-90 overflow-visible transition-transform duration-700 ${
-              isLeaving ? 'scale-125 rotate-45' : 'scale-100'
+            className={`absolute inset-0 w-full h-full -rotate-90 overflow-visible transition-transform duration-1000 ${
+              isLeaving ? 'scale-125 rotate-90' : 'scale-100'
             }`}
             viewBox="0 0 160 160"
           >
@@ -167,7 +196,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
           {/* Pure Circle Logo Card */}
           <div
-            className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-white to-surface border border-border flex items-center justify-center shadow-xl shadow-primary/10 transition-all duration-700 ${
+            className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-white to-surface border border-border flex items-center justify-center shadow-xl shadow-primary/10 transition-all duration-1000 ${
               isLeaving ? 'scale-115 shadow-accent/40 ring-4 ring-accent/30' : 'scale-100'
             }`}
           >
@@ -189,11 +218,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
         {/* Realtime Status & Progress Ticker */}
         <div
-          className={`font-mono text-xs sm:text-sm font-semibold text-text-secondary bg-background border border-border px-5 py-2 rounded-full shadow-sm transition-all duration-500 ${
-            isLeaving ? 'scale-90 opacity-0 translate-y-2' : 'scale-100 opacity-100 translate-y-0'
+          className={`font-mono text-xs sm:text-sm font-semibold text-text-secondary bg-background border border-border px-5 py-2 rounded-full shadow-sm transition-all duration-700 ${
+            isLeaving ? 'scale-90 opacity-0 translate-y-4' : 'scale-100 opacity-100 translate-y-0'
           }`}
         >
-          {statusText} {progress}%
+          {statusText} {Math.round(visualProgress)}%
         </div>
       </div>
     </div>

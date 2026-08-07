@@ -11,6 +11,7 @@ import { CurrencySelect } from '@/shared/components/CurrencySelect';
 import { ErrorModal } from '@/shared/components/ErrorModal';
 import { Upload, X, Check } from 'lucide-react';
 import { PageSkeleton } from '@/shared/components/PageSkeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const SettingsPage: React.FC = () => {
   const { settings, loadSettings, updateSettings, isLoading } = useSettingsStore();
@@ -96,10 +97,28 @@ export const SettingsPage: React.FC = () => {
       <Typography variant="h1" className="mb-6">Settings</Typography>
       <PageSkeleton loading={isLoading && !settings} className="flex flex-col gap-6">
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-sm">
+      <motion.form 
+        onSubmit={handleSubmit(onSubmit)} 
+        className="space-y-8 bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-sm"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+          }
+        }}
+      >
 
         {/* Branding */}
-        <div className="space-y-4">
+        <motion.div 
+          className="space-y-4"
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+          }}
+        >
           <Typography variant="h3" className="border-b border-border pb-2">Branding</Typography>
           <div className="space-y-2">
             <Label>Agency Name</Label>
@@ -117,25 +136,39 @@ export const SettingsPage: React.FC = () => {
             />
 
             {/* Logo Preview / Upload Container Box */}
-            <div
+            <motion.div
+              whileHover={{ scale: 1.01, borderColor: 'var(--color-primary, #1c385c)' }}
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-40 sm:h-44 border border-border rounded-xl bg-card flex items-center justify-center p-4 cursor-pointer hover:border-primary/50 transition-colors shadow-xs group relative overflow-hidden"
+              className="w-full h-40 sm:h-44 border border-border rounded-xl bg-card flex items-center justify-center p-4 cursor-pointer transition-colors shadow-xs group relative overflow-hidden"
             >
+              <AnimatePresence mode="wait">
               {logoBase64 ? (
-                <img
+                <motion.img
+                  key="logo"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
                   src={logoBase64}
                   alt="Logo Preview"
                   className="max-h-28 sm:max-h-32 max-w-[85%] object-contain"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center text-text-muted">
+                <motion.div 
+                  key="placeholder"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center text-text-muted"
+                >
                   <Upload className="w-8 h-8 mb-2 group-hover:text-primary transition-colors opacity-70" />
                   <span className="text-sm font-medium group-hover:text-text-primary transition-colors">
                     Click to upload logo
                   </span>
-                </div>
+                </motion.div>
               )}
-            </div>
+              </AnimatePresence>
+            </motion.div>
 
             {/* Action Buttons Centered Below Box */}
             <div className="flex items-center justify-center gap-3 pt-1 pb-1">
@@ -169,10 +202,16 @@ export const SettingsPage: React.FC = () => {
               Max size 2MB. Recommended format: PNG with transparent background.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Defaults */}
-        <div className="space-y-4 pt-4">
+        <motion.div 
+          className="space-y-4 pt-4"
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+          }}
+        >
           <Typography variant="h3" className="border-b border-border pb-2">Invoice Defaults</Typography>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -199,26 +238,34 @@ export const SettingsPage: React.FC = () => {
             <Label>Default Terms</Label>
             <Input placeholder="Net 30" {...register('defaultTerms')} error={errors.defaultTerms?.message} />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="pt-4 border-t border-border flex justify-end">
-          <Button 
-            type="submit" 
-            variant={isSaved ? "secondary" : "primary"} 
-            isLoading={isSubmitting}
-            disabled={isSaved}
-            className={isSaved ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300" : ""}
-          >
-            {isSaved ? (
-              <span className="flex items-center gap-2">
-                <Check className="w-4 h-4" /> Saved!
-              </span>
-            ) : (
-              'Save Settings'
-            )}
-          </Button>
-        </div>
-      </form>
+        <motion.div 
+          className="pt-4 border-t border-border flex justify-end"
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+          }}
+        >
+          <motion.div animate={{ scale: isSaved ? [1, 1.05, 1] : 1 }} transition={{ duration: 0.4 }}>
+            <Button 
+              type="submit" 
+              variant={isSaved ? "secondary" : "primary"} 
+              isLoading={isSubmitting}
+              disabled={isSaved}
+              className={isSaved ? "bg-green-600 hover:bg-green-600 text-white border-green-600 transition-all duration-300" : ""}
+            >
+              {isSaved ? (
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4" /> Saved!
+                </span>
+              ) : (
+                'Save Settings'
+              )}
+            </Button>
+          </motion.div>
+        </motion.div>
+      </motion.form>
       </PageSkeleton>
 
       <ErrorModal

@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '@/shared/utils/cn';
+import { motion, AnimatePresence } from 'framer-motion';
+import { errorSlideDown } from '@/shared/config/animations';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
@@ -29,9 +31,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           {...props}
         />
-        {error && (
-          <p className="mt-1 text-sm text-danger">{error}</p>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.p 
+              variants={errorSlideDown}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="mt-1 text-sm text-danger overflow-hidden"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

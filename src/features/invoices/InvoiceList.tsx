@@ -119,7 +119,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, onSelect, is
               key={virtualRow.key}
               ref={rowVirtualizer.measureElement}
               data-index={virtualRow.index}
-              className="absolute top-0 left-0 w-full cursor-pointer border-b border-border-subtle p-4 sm:p-5 hover:bg-muted/60 transition-colors flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4"
+              className="absolute top-0 left-0 w-full cursor-pointer border-b border-border-subtle p-4 sm:p-5 hover:bg-muted/60 hover:scale-[1.005] hover:z-10 hover:shadow-sm transition-all duration-200 ease-out flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 group"
               style={{
                 transform: `translateY(${virtualRow.start}px)`,
               }}

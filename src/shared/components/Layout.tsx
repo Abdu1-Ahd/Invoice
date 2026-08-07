@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, FileText, Settings, LogOut, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { useSyncWorker } from '@/features/sync/useSyncWorker';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
 import { cn } from '@/shared/utils/cn';
+import { motion } from 'framer-motion';
+import { activeNavIndicatorTransition } from '@/shared/config/animations';
 
 export const Layout: React.FC = () => {
   const { signOut } = useAuthStore();
@@ -35,7 +37,9 @@ export const Layout: React.FC = () => {
             className="absolute -right-3.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-text-muted hover:text-text-primary hover:bg-muted transition-colors shadow-md focus:outline-none z-30"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            <motion.div animate={{ rotate: isCollapsed ? 180 : 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="flex items-center justify-center">
+              <ChevronLeft className="h-4 w-4" />
+            </motion.div>
           </button>
         </div>
 
@@ -99,15 +103,33 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, isCollapsed, active 
     to={to}
     title={isCollapsed ? label : undefined}
     className={cn(
-      'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200',
+      'relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 group',
       active
-        ? 'bg-primary text-primary-foreground shadow-sm'
-        : 'text-text-secondary hover:bg-surface hover:text-text-primary',
+        ? 'text-primary-foreground'
+        : 'text-text-secondary hover:text-text-primary',
       isCollapsed && 'justify-center px-0'
     )}
   >
-    {icon}
-    {!isCollapsed && <span className="truncate">{label}</span>}
+    {active && (
+      <motion.div
+        layoutId="activeSidebarNav"
+        className="absolute inset-0 bg-primary shadow-sm rounded-md"
+        transition={activeNavIndicatorTransition}
+        style={{ zIndex: 0 }}
+      />
+    )}
+    {!active && (
+      <div className="absolute inset-0 bg-surface opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-200" style={{ zIndex: 0 }} />
+    )}
+    <motion.div 
+      className="relative z-10 flex items-center gap-3 w-full"
+      whileHover={{ x: isCollapsed ? 0 : 4 }}
+      transition={{ duration: 0.2 }}
+      style={{ justifyContent: isCollapsed ? 'center' : 'flex-start' }}
+    >
+      {icon}
+      {!isCollapsed && <span className="truncate">{label}</span>}
+    </motion.div>
   </Link>
 );
 
@@ -115,11 +137,20 @@ const MobileNavItem = ({ to, icon, label, active }: { to: string; icon: React.Re
   <Link
     to={to}
     className={cn(
-      'flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium transition-colors',
+      'relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium transition-colors',
       active ? 'text-primary font-bold' : 'text-text-muted hover:text-text-primary'
     )}
   >
-    {icon}
+    {active && (
+      <motion.div
+        layoutId="activeMobileNav"
+        className="absolute top-0 w-8 h-1 rounded-b-full bg-primary"
+        transition={activeNavIndicatorTransition}
+      />
+    )}
+    <motion.div animate={active ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+      {icon}
+    </motion.div>
     <span>{label}</span>
   </Link>
 );

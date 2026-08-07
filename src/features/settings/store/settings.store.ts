@@ -5,22 +5,24 @@ import { SettingsRepository } from '@/core/storage/settings.repository';
 interface SettingsState {
   settings: Settings | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   
   loadSettings: () => Promise<void>;
   updateSettings: (payload: SettingsPayload) => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: null,
   isLoading: false,
+  isInitialized: false,
   error: null,
 
   loadSettings: async () => {
-    set({ isLoading: true, error: null });
+    if (!get().isInitialized) set({ isLoading: true, error: null });
     try {
       const settings = await SettingsRepository.get();
-      set({ settings, isLoading: false });
+      set({ settings, isLoading: false, isInitialized: true });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

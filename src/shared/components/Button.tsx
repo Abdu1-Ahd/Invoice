@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '@/shared/utils/cn';
+import { motion } from 'framer-motion';
+import { buttonHoverTap, buttonDangerTap, buttonSecondaryHover } from '@/shared/config/animations';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -9,7 +11,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+    // Note: removing native active:scale since framer-motion handles it
+    const baseStyles = "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
     
     const variants = {
       primary: 'bg-primary text-primary-foreground hover:opacity-90 focus-visible:ring-primary',
@@ -24,12 +27,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'h-11 px-8',
     };
 
+    const hoverTapProps = 
+      variant === 'danger' ? buttonDangerTap : 
+      variant === 'secondary' || variant === 'ghost' ? buttonSecondaryHover : 
+      buttonHoverTap;
+
     return (
-      <button
-        ref={ref}
+      <motion.button
+        ref={ref as any}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
         disabled={disabled || isLoading}
-        {...props}
+        whileHover={hoverTapProps.hover}
+        whileTap={hoverTapProps.tap}
+        {...(props as any)}
       >
         {isLoading ? (
           <svg className="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -38,7 +48,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         ) : null}
         {children}
-      </button>
+      </motion.button>
     );
   }
 );

@@ -50,20 +50,83 @@ const PageLoader = () => (
 );
 
 const SplashOverlay = () => {
-  const { isAuthenticated, isInitializing } = useAuthStore();
+  const { isAuthenticated, isInitializing, setSplashFinished } = useAuthStore();
   const [showSplash, setShowSplash] = useState(true);
+  const [targetProgress, setTargetProgress] = useState(0);
+  const [statusText, setStatusText] = useState('INITIALIZING WORKSPACE...');
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const runInit = async () => {
+      if (isInitializing) {
+        setTargetProgress(30);
+        setStatusText('VERIFYING AUTHENTICATION...');
+        return;
+      }
+
+      if (!isAuthenticated) {
+        setTargetProgress(100);
+        setStatusText('LAUNCHING APP...');
+        return;
+      }
+
+      // Authenticated User Flow
+      setTargetProgress(60);
+      setStatusText('LOADING INDEXEDDB VAULT...');
+
+      try {
+        const { getDB } = await import('@/core/storage/db');
+        await getDB();
+        
+        if (!isMounted) return;
+        setTargetProgress(85);
+        setStatusText('SYNCHRONIZING WORKSPACE...');
+
+        // Brief yield for other sync processes
+        await new Promise(res => setTimeout(res, 100));
+
+        if (!isMounted) return;
+        setTargetProgress(100);
+        setStatusText('LAUNCHING DASHBOARD...');
+      } catch (e) {
+        console.error("Init error", e);
+        if (isMounted) {
+          setTargetProgress(100);
+          setStatusText('LAUNCHING DASHBOARD...');
+        }
+      }
+    };
+
+    runInit();
+
+    return () => { isMounted = false; };
+  }, [isInitializing, isAuthenticated]);
 
   React.useEffect(() => {
     if (isAuthenticated) {
       setShowSplash(true);
+      setSplashFinished(false);
+      // It will reset progress because isInitializing is false, but we need target progress to be accurate
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, setSplashFinished]);
 
-  if (!isInitializing && (!showSplash || !isAuthenticated)) {
+  if (!showSplash) {
     return null;
   }
 
-  return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  return (
+    <SplashScreen 
+      targetProgress={targetProgress}
+      statusText={statusText}
+      onExitStart={() => {
+        setSplashFinished(true);
+      }}
+      onComplete={() => {
+        setShowSplash(false);
+      }} 
+    />
+  );
 };
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {

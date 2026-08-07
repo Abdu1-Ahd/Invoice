@@ -6,6 +6,7 @@ interface InvoiceState {
   invoices: Invoice[];
   activeInvoice: { invoice: Invoice; items: InvoiceItem[] } | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   
   loadInvoices: () => Promise<void>;
@@ -15,17 +16,18 @@ interface InvoiceState {
   deleteInvoice: (id: string) => Promise<void>;
 }
 
-export const useInvoiceStore = create<InvoiceState>((set) => ({
+export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   invoices: [],
   activeInvoice: null,
   isLoading: false,
+  isInitialized: false,
   error: null,
 
   loadInvoices: async () => {
-    set({ isLoading: true, error: null });
+    if (!get().isInitialized) set({ isLoading: true, error: null });
     try {
       const invoices = await InvoiceRepository.findAll();
-      set({ invoices, isLoading: false });
+      set({ invoices, isLoading: false, isInitialized: true });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

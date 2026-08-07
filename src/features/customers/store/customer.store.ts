@@ -5,6 +5,7 @@ import { CustomerRepository } from '@/core/storage/customer.repository';
 interface CustomerState {
   customers: Customer[];
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   
   // Actions
@@ -14,16 +15,17 @@ interface CustomerState {
   deleteCustomer: (id: string) => Promise<void>;
 }
 
-export const useCustomerStore = create<CustomerState>((set) => ({
+export const useCustomerStore = create<CustomerState>((set, get) => ({
   customers: [],
   isLoading: false,
+  isInitialized: false,
   error: null,
 
   loadCustomers: async () => {
-    set({ isLoading: true, error: null });
+    if (!get().isInitialized) set({ isLoading: true, error: null });
     try {
       const customers = await CustomerRepository.findAll();
-      set({ customers, isLoading: false });
+      set({ customers, isLoading: false, isInitialized: true });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }

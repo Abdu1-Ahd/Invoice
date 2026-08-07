@@ -6,16 +6,19 @@ interface AuthState {
   user: FirebaseUser | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
+  isSplashFinished: boolean;
   
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   initializeAuthListener: () => void;
+  setSplashFinished: (finished: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isInitializing: true, // Wait for Firebase to check local indexedDB cache
+  isSplashFinished: false,
 
   signInWithGoogle: async () => {
     await AuthService.signInWithGoogle();
@@ -33,5 +36,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         isInitializing: false,
       });
     });
+  },
+
+  setSplashFinished: (finished: boolean) => {
+    set({ isSplashFinished: finished });
   },
 }));

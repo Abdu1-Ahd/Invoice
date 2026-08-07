@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Typography } from '@/shared/components/Typography';
 import { useInvoiceStore } from '@/features/invoices/store/invoice.store';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
@@ -8,12 +8,107 @@ import { cn } from '@/shared/utils/cn';
 import { formatCurrency, getCurrencySymbol, fetchExchangeRates, convertCurrencyAmount, ExchangeRates } from '@/core/utils/currency';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '@/shared/components/StatusBadge';
+import { motion, animate } from 'framer-motion';
+import { useAuthStore } from '@/features/auth/store/auth.store';
+
+const AnimatedCounter = ({ value, isCurrency, currencyCode, start }: { value: number, isCurrency?: boolean, currencyCode?: string, start: boolean }) => {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+  const prevValue = useRef(0);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (start && nodeRef.current) {
+      const fromValue = hasAnimated.current ? prevValue.current : 0;
+      const controls = animate(fromValue, value, {
+        duration: 0.5,
+        ease: "easeOut",
+        onUpdate(v) {
+          if (nodeRef.current) {
+            nodeRef.current.textContent = isCurrency && currencyCode 
+              ? formatCurrency(v, currencyCode) 
+              : Math.round(v).toString();
+          }
+        }
+      });
+      hasAnimated.current = true;
+      prevValue.current = value;
+      return () => controls.stop();
+    } else if (!start && nodeRef.current) {
+       nodeRef.current.textContent = isCurrency && currencyCode ? formatCurrency(0, currencyCode) : "0";
+    }
+  }, [start, value, isCurrency, currencyCode]);
+
+  return <span ref={nodeRef}>{isCurrency && currencyCode ? formatCurrency(0, currencyCode) : "0"}</span>;
+};
+
+interface MetricCardProps {
+  title: string;
+  value: number;
+  icon?: any;
+  customIcon?: React.ReactNode;
+  colorClass: string;
+  index: number;
+  currencyCode: string;
+  isSplashFinished: boolean;
+  topCardsAnimFinished: boolean;
+  onAnimationComplete: (index: number) => void;
+}
+
+const MetricCard = React.memo(({ 
+  title, 
+  value, 
+  icon: Icon, 
+  customIcon, 
+  colorClass, 
+  index,
+  currencyCode,
+  isSplashFinished,
+  topCardsAnimFinished,
+  onAnimationComplete
+}: MetricCardProps) => {
+  const isLeft = index % 2 === 0;
+  return (
+    <motion.div 
+      initial={{ x: isLeft ? -100 : 100, opacity: 0 }}
+      animate={isSplashFinished ? { x: 0, opacity: 1 } : { x: isLeft ? -100 : 100, opacity: 0 }}
+      transition={{ duration: 1, ease: 'easeOut' }}
+      onAnimationComplete={() => onAnimationComplete(index)}
+      className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-sm flex items-center gap-3.5 min-w-0 w-full overflow-hidden"
+    >
+      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0 flex items-center justify-center', colorClass)}>
+        {customIcon ? (
+          <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-extrabold text-lg sm:text-lg tracking-tight leading-none">
+            {customIcon}
+          </span>
+        ) : (
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs block">
+          {title}
+        </Typography>
+        <Typography variant="h2" className="mt-0.5 text-lg sm:text-xl font-bold text-text-primary block">
+          <AnimatedCounter 
+            value={value} 
+            isCurrency={true}
+            currencyCode={currencyCode} 
+            start={topCardsAnimFinished} 
+          />
+        </Typography>
+      </div>
+    </motion.div>
+  );
+});
 
 export const DashboardPage: React.FC = () => {
   const { invoices, loadInvoices } = useInvoiceStore();
   const { customers, loadCustomers } = useCustomerStore();
   const { settings, loadSettings } = useSettingsStore();
+  const { isSplashFinished } = useAuthStore();
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
+  const [topCardsAnimFinished, setTopCardsAnimFinished] = useState(false);
+  const [fadeCardsAnimFinished, setFadeCardsAnimFinished] = useState(false);
 
 
 
@@ -59,27 +154,9 @@ export const DashboardPage: React.FC = () => {
     return { totalRevenue, outstanding, overdue, draft };
   }, [invoices, currencyCode, exchangeRates]);
 
-  const MetricCard = ({ title, value, icon: Icon, customIcon, colorClass }: any) => (
-    <div className="bg-surface p-4 sm:p-5 rounded-xl border border-border shadow-sm flex items-center gap-3.5 min-w-0 w-full overflow-hidden">
-      <div className={cn('p-3 sm:p-3.5 rounded-full flex-shrink-0 flex items-center justify-center', colorClass)}>
-        {customIcon ? (
-          <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-extrabold text-lg sm:text-lg tracking-tight leading-none">
-            {customIcon}
-          </span>
-        ) : (
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-xs block">
-          {title}
-        </Typography>
-        <Typography variant="h2" className="mt-0.5 text-lg sm:text-xl font-bold text-text-primary block">
-          {formatCurrency(value, currencyCode)}
-        </Typography>
-      </div>
-    </div>
-  );
+  const handleCardAnimationComplete = React.useCallback((index: number) => {
+    if (index === 3) setTopCardsAnimFinished(true);
+  }, []);
 
   return (
     <div className="w-full p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
@@ -88,74 +165,114 @@ export const DashboardPage: React.FC = () => {
       </div>
 
 
-      {/* Responsive Financial Cards Grid: 1 on mobile, 2 on tablet & desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* Responsive Financial Cards Grid: 1 on mobile, 2 on tablet, 4 on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <MetricCard
           title="Total Revenue"
           value={metrics.totalRevenue}
           customIcon={getCurrencySymbol(currencyCode)}
           colorClass="bg-success/15 text-success"
+          index={0}
+          currencyCode={currencyCode}
+          isSplashFinished={isSplashFinished}
+          topCardsAnimFinished={topCardsAnimFinished}
+          onAnimationComplete={handleCardAnimationComplete}
         />
         <MetricCard
           title="Outstanding"
           value={metrics.outstanding}
           icon={Clock}
           colorClass="bg-info/15 text-info"
+          index={1}
+          currencyCode={currencyCode}
+          isSplashFinished={isSplashFinished}
+          topCardsAnimFinished={topCardsAnimFinished}
+          onAnimationComplete={handleCardAnimationComplete}
         />
         <MetricCard
           title="Overdue"
           value={metrics.overdue}
           icon={AlertCircle}
           colorClass="bg-danger/15 text-danger"
+          index={2}
+          currencyCode={currencyCode}
+          isSplashFinished={isSplashFinished}
+          topCardsAnimFinished={topCardsAnimFinished}
+          onAnimationComplete={handleCardAnimationComplete}
         />
         <MetricCard
           title="In Drafts"
           value={metrics.draft}
           icon={CheckCircle}
           colorClass="bg-muted text-text-muted"
+          index={3}
+          currencyCode={currencyCode}
+          isSplashFinished={isSplashFinished}
+          topCardsAnimFinished={topCardsAnimFinished}
+          onAnimationComplete={handleCardAnimationComplete}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">        
         {/* Total Invoices & Total Customers Counts */}
         <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 lg:gap-6 lg:self-start order-1 lg:order-2">
-          <Link
-            to="/invoices"
-            className="bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isSplashFinished ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 1 }}
+            onAnimationComplete={() => setFadeCardsAnimFinished(true)}
+            className="h-full"
           >
-            <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-accent transition-colors block truncate">
-                Total Invoices
-              </Typography>
-              <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
-                {invoices.length}
-              </Typography>
-            </div>
-            <div className="p-3 sm:p-4 rounded-full bg-accent/15 text-accent group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
-              <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
-            </div>
-          </Link>
+            <Link
+              to="/invoices"
+              className="h-full bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+            >
+              <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
+                <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-accent transition-colors block truncate">
+                  Total Invoices
+                </Typography>
+                <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
+                  <AnimatedCounter value={invoices.length} start={fadeCardsAnimFinished} />
+                </Typography>
+              </div>
+              <div className="p-3 sm:p-4 rounded-full bg-accent/15 text-accent group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
+                <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
+              </div>
+            </Link>
+          </motion.div>
 
-          <Link
-            to="/customers"
-            className="bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-success/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isSplashFinished ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="h-full"
           >
-            <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
-              <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-success transition-colors block truncate">
-                Total Customers
-              </Typography>
-              <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
-                {customers.length}
-              </Typography>
-            </div>
-            <div className="p-3 sm:p-4 rounded-full bg-success/15 text-success group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
-              <Users className="w-6 h-6 sm:w-8 sm:h-8" />
-            </div>
-          </Link>
+            <Link
+              to="/customers"
+              className="h-full bg-surface p-4 sm:p-6 rounded-xl border border-border shadow-sm flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between gap-3.5 hover:shadow-md hover:border-success/40 hover:-translate-y-0.5 transition-all cursor-pointer group min-w-0"
+            >
+              <div className="space-y-1 min-w-0 w-full lg:w-auto text-center lg:text-left">
+                <Typography variant="caption" className="text-text-muted uppercase font-bold tracking-wider text-[11px] sm:text-xs group-hover:text-success transition-colors block truncate">
+                  Total Customers
+                </Typography>
+                <Typography variant="h2" className="text-2xl sm:text-3xl font-black text-text-primary block truncate">
+                  <AnimatedCounter value={customers.length} start={fadeCardsAnimFinished} />
+                </Typography>
+              </div>
+              <div className="p-3 sm:p-4 rounded-full bg-success/15 text-success group-hover:scale-105 transition-transform flex-shrink-0 self-center lg:self-auto">
+                <Users className="w-6 h-6 sm:w-8 sm:h-8" />
+              </div>
+            </Link>
+          </motion.div>
         </div>
 
       {/* Recent Invoices & Total Counts (Invoices & Customers) */}
-        <div className="lg:col-span-2 bg-surface p-6 rounded-xl border border-border shadow-sm order-2 lg:order-1">
+        <motion.div 
+          initial={{ y: 50, opacity: 0 }}
+          animate={isSplashFinished ? { y: 0, opacity: 1 } : { y: 50, opacity: 0 }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className="lg:col-span-2 bg-surface p-6 rounded-xl border border-border shadow-sm order-2 lg:order-1"
+        >
           <div className="flex justify-between items-center mb-4">
             <Typography variant="h3">Recent Invoices</Typography>
             <Link to="/invoices" className="text-xs font-semibold text-accent hover:underline">
@@ -194,7 +311,7 @@ export const DashboardPage: React.FC = () => {
               })
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
